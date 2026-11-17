@@ -441,7 +441,6 @@ fn make_vobject(
     data_module: Option<&Bound<'_, PyAny>>,
     function: Option<&Bound<'_, PyAny>>,
 ) -> PyResult<Py<PyAny>> {
-    let class = reflect_module(py)?.getattr("VObject")?;
     let path = PyTuple::new(py, path)?;
     let data_module = match data_module {
         Some(value) => value.clone(),
@@ -451,16 +450,15 @@ fn make_vobject(
         Some(value) => value.clone(),
         None => py.None().into_bound(py),
     };
-    Ok(class
-        .call1((
-            access.clone(),
-            descriptor.clone(),
-            data.clone(),
-            path,
-            data_module,
-            function,
-        ))?
-        .unbind())
+    let object = VObject {
+        access: access.clone().unbind(),
+        descriptor: descriptor.clone().unbind(),
+        data: data.clone().unbind(),
+        path: path.into_any().unbind(),
+        data_module: data_module.unbind(),
+        function: function.unbind(),
+    };
+    Ok(Py::new(py, object)?.into_any())
 }
 
 fn reflect_error(py: Python<'_>, message: &str) -> PyErr {
@@ -470,6 +468,611 @@ fn reflect_error(py: Python<'_>, message: &str) -> PyErr {
     {
         Ok(error) => PyErr::from_value(error),
         Err(error) => error,
+    }
+}
+
+// ----------------------------------------------------------------------
+// The exported data classes: Config, VibaStep, VibaFunction
+// ----------------------------------------------------------------------
+
+/// Which names in the source stand for the units `never` and `nil`.
+#[pyclass(name = "Config", module = "rs_viba.reflect")]
+pub struct Config {
+    #[pyo3(get)]
+    never_eqv: Py<PyAny>,
+    #[pyo3(get)]
+    nil_eqv: Py<PyAny>,
+}
+
+#[pymethods]
+impl Config {
+    #[new]
+    #[pyo3(signature = (never_eqv = None, nil_eqv = None))]
+    fn new(
+        py: Python<'_>,
+        never_eqv: Option<&Bound<'_, PyAny>>,
+        nil_eqv: Option<&Bound<'_, PyAny>>,
+    ) -> PyResult<Self> {
+        let names = |value: Option<&Bound<'_, PyAny>>| -> PyResult<Py<PyAny>> {
+            let out = PySet::empty(py)?;
+            if let Some(value) = value {
+                for item in value.try_iter()? {
+                    let item = item?;
+                    let name: String = type_name_of(&item)?;
+                    out.add(PyString::new(py, &name))?;
+                }
+            }
+            let frozen = pyo3::types::PyFrozenSet::new(py, out.iter())?;
+            Ok(frozen.into_any().unbind())
+        };
+        Ok(Config {
+            never_eqv: names(never_eqv)?,
+            nil_eqv: names(nil_eqv)?,
+        })
+    }
+
+    fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
+        let sorted = py.import("builtins")?.getattr("sorted")?;
+        let never = sorted.call1((self.never_eqv.bind(py),))?;
+        let nil = sorted.call1((self.nil_eqv.bind(py),))?;
+        Ok(format!(
+            "Config(never_eqv={}, nil_eqv={})",
+            pyrepr(py, &never),
+            pyrepr(py, &nil)
+        ))
+    }
+
+    fn is_unit_name(&self, py: Python<'_>, name: &str) -> PyResult<bool> {
+        Ok(self.never_eqv.bind(py).contains(name)? || self.nil_eqv.bind(py).contains(name)?)
+    }
+}
+
+/// One step of an address: one of the four branches.
+#[pyclass(name = "VibaStep", module = "rs_viba.reflect")]
+pub struct VibaStep {
+    #[pyo3(get, set)]
+    kind: String,
+    #[pyo3(get, set)]
+    value: Py<PyAny>,
+}
+
+#[pymethods]
+impl VibaStep {
+    #[new]
+    fn new(kind: String, value: Py<PyAny>) -> Self {
+        VibaStep { kind, value }
+    }
+
+    fn __repr__(&self, py: Python<'_>) -> String {
+        format!("{}({})", self.kind, pyrepr(py, self.value.bind(py)))
+    }
+
+    fn __eq__(&self, py: Python<'_>, other: &Bound<'_, PyAny>) -> PyResult<bool> {
+        if pyast::class_name(other)? != "VibaStep" {
+            return Ok(false);
+        }
+        let kind: String = other.getattr("kind")?.extract()?;
+        if kind != self.kind {
+            return Ok(false);
+        }
+        Ok(self.value.bind(py).eq(other.getattr("value")?)?)
+    }
+
+    fn __hash__(&self, py: Python<'_>) -> PyResult<isize> {
+        let key = PyTuple::new(
+            py,
+            [
+                PyString::new(py, &self.kind).into_any(),
+                self.value.bind(py).clone(),
+            ],
+        )?;
+        py.import("builtins")?
+            .getattr("hash")?
+            .call1((key,))?
+            .extract()
+    }
+}
+
+/// A function or a closure as a value: its name and the module that defines it.
+#[pyclass(name = "VibaFunction", module = "rs_viba.reflect")]
+pub struct VibaFunction {
+    #[pyo3(get)]
+    name: String,
+    #[pyo3(get)]
+    module: Py<PyAny>,
+}
+
+#[pymethods]
+impl VibaFunction {
+    #[new]
+    fn new(name: String, module: Py<PyAny>) -> Self {
+        VibaFunction { name, module }
+    }
+
+    #[getter]
+    fn module_name(&self, py: Python<'_>) -> PyResult<String> {
+        Ok(self
+            .module
+            .bind(py)
+            .getattr("name")
+            .and_then(|value| value.extract::<String>())
+            .unwrap_or_default())
+    }
+
+    #[getter]
+    fn relative_path(&self, py: Python<'_>) -> PyResult<String> {
+        Ok(self
+            .module
+            .bind(py)
+            .getattr("module_path")
+            .and_then(|value| value.extract::<String>())
+            .unwrap_or_default())
+    }
+
+    #[getter]
+    fn absolute_path(&self, py: Python<'_>) -> PyResult<String> {
+        Ok(self
+            .module
+            .bind(py)
+            .getattr("file_path")
+            .ok()
+            .and_then(|value| {
+                if value.is_none() {
+                    None
+                } else {
+                    value.extract::<String>().ok()
+                }
+            })
+            .unwrap_or_default())
+    }
+
+    fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
+        Ok(format!(
+            "VibaFunction({}.{})",
+            self.module_name(py)?,
+            self.name
+        ))
+    }
+
+    fn __eq__(&self, py: Python<'_>, other: &Bound<'_, PyAny>) -> PyResult<bool> {
+        if pyast::class_name(other)? != "VibaFunction" {
+            return Ok(false);
+        }
+        let name: String = other.getattr("name")?.extract()?;
+        Ok(name == self.name && other.getattr("module")?.is(&self.module.bind(py)))
+    }
+
+    fn __hash__(&self, py: Python<'_>) -> PyResult<isize> {
+        let key = PyTuple::new(
+            py,
+            [
+                PyString::new(py, &self.name).into_any(),
+                self.module.bind(py).clone(),
+            ],
+        )?;
+        py.import("builtins")?
+            .getattr("hash")?
+            .call1((key,))?
+            .extract()
+    }
+}
+
+// ----------------------------------------------------------------------
+// The exported data classes: VObject and VibaData
+// ----------------------------------------------------------------------
+
+/// One object: a descriptor and a piece of viba data, with the address walked
+/// to it.  The Python implementation of the same protocol lives in the
+/// original project; this is the Rust one, exported for comparison and for a
+/// native runtime.
+#[pyclass(name = "VObject", module = "rs_viba.reflect")]
+pub struct VObject {
+    access: Py<PyAny>,
+    descriptor: Py<PyAny>,
+    data: Py<PyAny>,
+    path: Py<PyAny>,
+    data_module: Py<PyAny>,
+    function: Py<PyAny>,
+}
+
+fn vobject_object<'py>(py: Python<'py>, slf: PyRef<'py, VObject>) -> Bound<'py, PyAny> {
+    let value: Py<VObject> = slf.into();
+    value.into_bound(py).into_any()
+}
+
+fn dynamic_call(
+    py: Python<'_>,
+    object: &Bound<'_, PyAny>,
+    method: &str,
+    argument: &Bound<'_, PyAny>,
+) -> PyResult<Py<PyAny>> {
+    let value = object.getattr(method)?;
+    Ok(py
+        .import("functools")?
+        .getattr("partial")?
+        .call1((value, argument))?
+        .unbind())
+}
+
+#[pymethods]
+impl VObject {
+    #[new]
+    #[pyo3(signature = (access, descriptor, data, path = None, data_module = None, function = None))]
+    fn new(
+        py: Python<'_>,
+        access: Py<PyAny>,
+        descriptor: Py<PyAny>,
+        data: Py<PyAny>,
+        path: Option<&Bound<'_, PyAny>>,
+        data_module: Option<&Bound<'_, PyAny>>,
+        function: Option<&Bound<'_, PyAny>>,
+    ) -> PyResult<Self> {
+        let path = match path {
+            Some(path) => {
+                let mut items = Vec::new();
+                for item in path.try_iter()? {
+                    items.push(item?.unbind());
+                }
+                PyTuple::new(py, items)?.into_any().unbind()
+            }
+            None => PyTuple::empty(py).into_any().unbind(),
+        };
+        Ok(VObject {
+            access,
+            descriptor,
+            data,
+            path,
+            data_module: data_module
+                .map(|value| value.clone().unbind())
+                .unwrap_or_else(|| py.None()),
+            function: function
+                .map(|value| value.clone().unbind())
+                .unwrap_or_else(|| py.None()),
+        })
+    }
+
+    #[getter]
+    fn _access(&self, py: Python<'_>) -> Py<PyAny> {
+        self.access.clone_ref(py)
+    }
+
+    #[getter]
+    fn descriptor(&self, py: Python<'_>) -> Py<PyAny> {
+        self.descriptor.clone_ref(py)
+    }
+
+    #[getter]
+    fn data(&self, py: Python<'_>) -> Py<PyAny> {
+        self.data.clone_ref(py)
+    }
+
+    #[getter]
+    fn path(&self, py: Python<'_>) -> Py<PyAny> {
+        self.path.clone_ref(py)
+    }
+
+    #[setter]
+    fn set_path(&mut self, value: Py<PyAny>) {
+        self.path = value;
+    }
+
+    #[getter]
+    fn data_module(&self, py: Python<'_>) -> Py<PyAny> {
+        self.data_module.clone_ref(py)
+    }
+
+    #[setter]
+    fn set_data_module(&mut self, value: Py<PyAny>) {
+        self.data_module = value;
+    }
+
+    #[getter]
+    fn function(&self, py: Python<'_>) -> Py<PyAny> {
+        self.function.clone_ref(py)
+    }
+
+    #[setter]
+    fn set_function(&mut self, value: Py<PyAny>) {
+        self.function = value;
+    }
+
+    fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
+        let path = self.path.bind(py);
+        let mut pieces = Vec::new();
+        for step in path.try_iter()? {
+            pieces.push(pyrepr(py, &step?));
+        }
+        let where_ = if pieces.is_empty() {
+            "root".to_string()
+        } else {
+            pieces.join(".")
+        };
+        Ok(format!("VObject({})", where_))
+    }
+
+    fn by_tag(slf: PyRef<'_, Self>, py: Python<'_>, name: &str) -> PyResult<Py<PyAny>> {
+        let access = slf.access.clone_ref(py);
+        let object = vobject_object(py, slf);
+        let step = reflect_module(py)?.getattr("by_tag")?.call1((name,))?;
+        let given = d_get(py, access.bind(py), &object, &step)?;
+        d_unwrap(py, given.bind(py))
+    }
+
+    fn by_field_index(slf: PyRef<'_, Self>, py: Python<'_>, index: usize) -> PyResult<Py<PyAny>> {
+        let access = slf.access.clone_ref(py);
+        let object = vobject_object(py, slf);
+        let step = reflect_module(py)?
+            .getattr("by_field_index")?
+            .call1((index,))?;
+        let given = d_get(py, access.bind(py), &object, &step)?;
+        d_unwrap(py, given.bind(py))
+    }
+
+    fn at_index(slf: PyRef<'_, Self>, py: Python<'_>, index: usize) -> PyResult<Py<PyAny>> {
+        let access = slf.access.clone_ref(py);
+        let object = vobject_object(py, slf);
+        let step = reflect_module(py)?.getattr("at_index")?.call1((index,))?;
+        let given = d_get(py, access.bind(py), &object, &step)?;
+        d_unwrap(py, given.bind(py))
+    }
+
+    fn at_key(slf: PyRef<'_, Self>, py: Python<'_>, key: &str) -> PyResult<Py<PyAny>> {
+        let access = slf.access.clone_ref(py);
+        let object = vobject_object(py, slf);
+        let step = reflect_module(py)?.getattr("at_key")?.call1((key,))?;
+        let given = d_get(py, access.bind(py), &object, &step)?;
+        d_unwrap(py, given.bind(py))
+    }
+
+    #[getter]
+    fn leaf(slf: PyRef<'_, Self>, py: Python<'_>) -> PyResult<Py<PyAny>> {
+        let object = vobject_object(py, slf);
+        let given = d_leaf(py, &object)?;
+        d_unwrap(py, given.bind(py))
+    }
+
+    #[getter]
+    fn value(slf: PyRef<'_, Self>, py: Python<'_>) -> PyResult<Py<PyAny>> {
+        let object = vobject_object(py, slf);
+        let given = d_leaf(py, &object)?;
+        d_unwrap(py, given.bind(py))
+    }
+
+    #[getter]
+    fn is_list(&self, py: Python<'_>) -> PyResult<bool> {
+        Ok(
+            d_container_kind(py, self.access.bind(py), self.descriptor.bind(py))?.as_deref()
+                == Some("list"),
+        )
+    }
+
+    #[getter]
+    fn is_set(&self, py: Python<'_>) -> PyResult<bool> {
+        Ok(
+            d_container_kind(py, self.access.bind(py), self.descriptor.bind(py))?.as_deref()
+                == Some("set"),
+        )
+    }
+
+    #[getter]
+    fn is_dict(&self, py: Python<'_>) -> PyResult<bool> {
+        Ok(
+            d_container_kind(py, self.access.bind(py), self.descriptor.bind(py))?.as_deref()
+                == Some("dict"),
+        )
+    }
+
+    fn __len__(slf: PyRef<'_, Self>, py: Python<'_>) -> PyResult<usize> {
+        let access = slf.access.clone_ref(py);
+        let object = vobject_object(py, slf);
+        let given = d_length(py, &object)?;
+        let value = d_unwrap(py, given.bind(py))?;
+        value.bind(py).extract()
+    }
+
+    fn keys(slf: PyRef<'_, Self>, py: Python<'_>) -> PyResult<Py<PyAny>> {
+        let object = vobject_object(py, slf);
+        let given = d_keys(py, &object)?;
+        d_unwrap(py, given.bind(py))
+    }
+
+    fn values(slf: PyRef<'_, Self>, py: Python<'_>) -> PyResult<Py<PyAny>> {
+        let object = vobject_object(py, slf);
+        let keys = d_unwrap(py, d_keys(py, &object)?.bind(py))?;
+        let out = PyList::empty(py);
+        for key in keys.bind(py).try_iter()? {
+            out.append(object.call_method1("at_key", (key?,))?)?;
+        }
+        Ok(out.into_any().unbind())
+    }
+
+    fn items(slf: PyRef<'_, Self>, py: Python<'_>) -> PyResult<Py<PyAny>> {
+        let object = vobject_object(py, slf);
+        let keys = d_unwrap(py, d_keys(py, &object)?.bind(py))?;
+        let out = PyList::empty(py);
+        for key in keys.bind(py).try_iter()? {
+            let key = key?;
+            out.append(PyTuple::new(
+                py,
+                [key.clone(), object.call_method1("at_key", (key,))?],
+            )?)?;
+        }
+        Ok(out.into_any().unbind())
+    }
+
+    fn __getitem__(
+        slf: PyRef<'_, Self>,
+        py: Python<'_>,
+        key: &Bound<'_, PyAny>,
+    ) -> PyResult<Py<PyAny>> {
+        if key.is_instance_of::<PyInt>() && !key.is_instance_of::<PyBool>() {
+            let index: usize = key.extract()?;
+            return VObject::at_index(slf, py, index);
+        }
+        let text: String = key.str()?.to_string();
+        VObject::at_key(slf, py, &text)
+    }
+
+    fn __iter__(slf: PyRef<'_, Self>, py: Python<'_>) -> PyResult<Py<PyAny>> {
+        let object = vobject_object(py, slf);
+        let length = d_unwrap(py, d_length(py, &object)?.bind(py))?;
+        let length: usize = length.bind(py).extract()?;
+        let out = PyList::empty(py);
+        for index in 0..length {
+            out.append(object.call_method1("at_index", (index,))?)?;
+        }
+        Ok(out.try_iter()?.into_any().unbind())
+    }
+
+    fn __contains__(slf: PyRef<'_, Self>, py: Python<'_>, name: &str) -> PyResult<bool> {
+        let access = slf.access.clone_ref(py);
+        let object = vobject_object(py, slf);
+        let step = reflect_module(py)?.getattr("by_tag")?.call1((name,))?;
+        let given = d_has(py, access.bind(py), &object, &step)?;
+        d_unwrap(py, given.bind(py))?.bind(py).extract()
+    }
+
+    fn __dir__(slf: PyRef<'_, Self>, py: Python<'_>) -> PyResult<Py<PyAny>> {
+        let object = vobject_object(py, slf);
+        Ok(PyList::new(py, d_dir(py, &object)?)?.into_any().unbind())
+    }
+
+    fn _get_tag_piece(slf: PyRef<'_, Self>, py: Python<'_>, name: &str) -> PyResult<Py<PyAny>> {
+        VObject::by_tag(slf, py, name)
+    }
+
+    fn _has_tag_piece(slf: PyRef<'_, Self>, py: Python<'_>, name: &str) -> PyResult<bool> {
+        VObject::__contains__(slf, py, name)
+    }
+
+    fn _try_get_tag_piece(slf: PyRef<'_, Self>, py: Python<'_>, name: &str) -> PyResult<Py<PyAny>> {
+        let access = slf.access.clone_ref(py);
+        let object = vobject_object(py, slf);
+        let step = reflect_module(py)?.getattr("by_tag")?.call1((name,))?;
+        d_get(py, access.bind(py), &object, &step)
+    }
+
+    fn _get_field_piece(slf: PyRef<'_, Self>, py: Python<'_>, index: usize) -> PyResult<Py<PyAny>> {
+        VObject::by_field_index(slf, py, index)
+    }
+
+    fn _has_field_piece(slf: PyRef<'_, Self>, py: Python<'_>, index: usize) -> PyResult<bool> {
+        let access = slf.access.clone_ref(py);
+        let object = vobject_object(py, slf);
+        let step = reflect_module(py)?
+            .getattr("by_field_index")?
+            .call1((index,))?;
+        let given = d_has(py, access.bind(py), &object, &step)?;
+        d_unwrap(py, given.bind(py))?.bind(py).extract()
+    }
+
+    fn _try_get_field_piece(
+        slf: PyRef<'_, Self>,
+        py: Python<'_>,
+        index: usize,
+    ) -> PyResult<Py<PyAny>> {
+        let access = slf.access.clone_ref(py);
+        let object = vobject_object(py, slf);
+        let step = reflect_module(py)?
+            .getattr("by_field_index")?
+            .call1((index,))?;
+        d_get(py, access.bind(py), &object, &step)
+    }
+
+    fn __getattr__(slf: PyRef<'_, Self>, py: Python<'_>, name: &str) -> PyResult<Py<PyAny>> {
+        let object = vobject_object(py, slf);
+        if let Some(rest) = name.strip_prefix("get_field_") {
+            if let Ok(index) = rest.parse::<usize>() {
+                return dynamic_call(
+                    py,
+                    &object,
+                    "_get_field_piece",
+                    &pyint(py, index).into_bound(py),
+                );
+            }
+        }
+        if let Some(rest) = name.strip_prefix("has_field_") {
+            if let Ok(index) = rest.parse::<usize>() {
+                return dynamic_call(
+                    py,
+                    &object,
+                    "_has_field_piece",
+                    &pyint(py, index).into_bound(py),
+                );
+            }
+        }
+        if let Some(rest) = name.strip_prefix("try_get_field_") {
+            if let Ok(index) = rest.parse::<usize>() {
+                return dynamic_call(
+                    py,
+                    &object,
+                    "_try_get_field_piece",
+                    &pyint(py, index).into_bound(py),
+                );
+            }
+        }
+        if let Some(rest) = name.strip_prefix("get_") {
+            return dynamic_call(
+                py,
+                &object,
+                "_get_tag_piece",
+                &PyString::new(py, rest).into_any(),
+            );
+        }
+        if let Some(rest) = name.strip_prefix("has_") {
+            return dynamic_call(
+                py,
+                &object,
+                "_has_tag_piece",
+                &PyString::new(py, rest).into_any(),
+            );
+        }
+        if let Some(rest) = name.strip_prefix("try_get_") {
+            return dynamic_call(
+                py,
+                &object,
+                "_try_get_tag_piece",
+                &PyString::new(py, rest).into_any(),
+            );
+        }
+        Err(pyo3::exceptions::PyAttributeError::new_err(
+            name.to_string(),
+        ))
+    }
+}
+
+/// The data side of the protocol: one AST node and the module it is in.
+#[pyclass(name = "VibaData", module = "rs_viba.reflect")]
+pub struct VibaData {
+    #[pyo3(get)]
+    node: Py<PyAny>,
+    #[pyo3(get)]
+    module: Py<PyAny>,
+}
+
+#[pymethods]
+impl VibaData {
+    #[new]
+    #[pyo3(signature = (node, module = None))]
+    fn new(
+        py: Python<'_>,
+        node: &Bound<'_, PyAny>,
+        module: Option<&Bound<'_, PyAny>>,
+    ) -> PyResult<Self> {
+        if pyast::class_name(node)? == "AstNodeType" {
+            let ast_node = node.getattr("ast_node")?;
+            let container = node.getattr("container_module")?;
+            return Ok(VibaData {
+                node: ast_node.unbind(),
+                module: container.unbind(),
+            });
+        }
+        Ok(VibaData {
+            node: node.clone().unbind(),
+            module: module
+                .map(|value| value.clone().unbind())
+                .unwrap_or_else(|| py.None()),
+        })
     }
 }
 
@@ -2918,6 +3521,11 @@ fn reflect_dir_py(py: Python<'_>, node: &Bound<'_, PyAny>) -> PyResult<Vec<Strin
 
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<VibaAccess>()?;
+    m.add_class::<Config>()?;
+    m.add_class::<VibaStep>()?;
+    m.add_class::<VibaFunction>()?;
+    m.add_class::<VObject>()?;
+    m.add_class::<VibaData>()?;
     m.add_function(wrap_pyfunction!(reflect_type_name_py, m)?)?;
     m.add_function(wrap_pyfunction!(reflect_tag_of_py, m)?)?;
     m.add_function(wrap_pyfunction!(reflect_key_text_py, m)?)?;

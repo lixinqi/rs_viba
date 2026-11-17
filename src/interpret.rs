@@ -9870,7 +9870,7 @@ fn run_problem(
     Ok(None)
 }
 
-fn finished(py: Python<'_>, answer: &Bound<'_, PyAny>) -> PyResult<P> {
+pub(crate) fn finished(py: Python<'_>, answer: &Bound<'_, PyAny>) -> PyResult<P> {
     if is_ok(py, answer)? {
         let value = ok_value(answer)?;
         let mut answer_object = None;
@@ -9918,6 +9918,11 @@ fn interpret_py(
     let list_files = list_files.unwrap_or(&no_value);
     if let Some(problem) = run_problem(py, "interpret", environ, get_file, list_files)? {
         return result_viba_data(py, problem.bind(py));
+    }
+    if let Some(native) =
+        crate::native_runtime::try_interpret(py, &viba_main_file, environ, get_file, list_files)?
+    {
+        return Ok(native);
     }
     let runner = new_runner(py, environ, get_file, list_files)?;
     let answer = runner_run_file(
@@ -10032,12 +10037,12 @@ fn is_interpret_result_py(py: Python<'_>, value: &Bound<'_, PyAny>) -> PyResult<
 }
 
 #[pyfunction(name = "viba_data_py")]
-fn viba_data_py(py: Python<'_>, value: &Bound<'_, PyAny>) -> PyResult<P> {
+pub(crate) fn viba_data_py(py: Python<'_>, value: &Bound<'_, PyAny>) -> PyResult<P> {
     viba_data(py, value)
 }
 
 #[pyfunction(name = "source_module_of_py")]
-fn source_module_of_py(py: Python<'_>, node: &Bound<'_, PyAny>) -> PyResult<Option<P>> {
+pub(crate) fn source_module_of_py(py: Python<'_>, node: &Bound<'_, PyAny>) -> PyResult<Option<P>> {
     source_module_of(py, node)
 }
 
@@ -10265,12 +10270,12 @@ fn reenact_calls_py(
 }
 
 #[pyfunction(name = "storage_path_of_py")]
-fn storage_path_of_py(py: Python<'_>, environ: &Bound<'_, PyAny>) -> PyResult<String> {
+pub(crate) fn storage_path_of_py(py: Python<'_>, environ: &Bound<'_, PyAny>) -> PyResult<String> {
     storage_path(py, environ)
 }
 
 #[pyfunction(name = "call_signature_py")]
-fn call_signature_py(py: Python<'_>, members: &Bound<'_, PyAny>) -> PyResult<P> {
+pub(crate) fn call_signature_py(py: Python<'_>, members: &Bound<'_, PyAny>) -> PyResult<P> {
     call_signature(py, members)
 }
 
@@ -10399,7 +10404,7 @@ fn resumable_run_py(
 }
 
 #[pyfunction(name = "getter_call_py")]
-fn getter_call_py(py: Python<'_>, getter: &Bound<'_, PyAny>) -> PyResult<P> {
+pub(crate) fn getter_call_py(py: Python<'_>, getter: &Bound<'_, PyAny>) -> PyResult<P> {
     if g(getter, "answer")?.is_none() {
         let activation = g(getter, "activation")?;
         let node = g(getter, "node")?;
@@ -10416,7 +10421,7 @@ fn getter_call_py(py: Python<'_>, getter: &Bound<'_, PyAny>) -> PyResult<P> {
 }
 
 #[pyfunction(name = "host_argument_call_py")]
-fn host_argument_call_py(
+pub(crate) fn host_argument_call_py(
     py: Python<'_>,
     host_argument: &Bound<'_, PyAny>,
     environ: &Bound<'_, PyAny>,
@@ -10430,12 +10435,15 @@ fn host_argument_call_py(
 }
 
 #[pyfunction(name = "host_argument_closure_py")]
-fn host_argument_closure_py(py: Python<'_>, host_argument: &Bound<'_, PyAny>) -> PyResult<P> {
+pub(crate) fn host_argument_closure_py(
+    py: Python<'_>,
+    host_argument: &Bound<'_, PyAny>,
+) -> PyResult<P> {
     host_argument_closure(py, host_argument)
 }
 
 #[pyfunction(name = "host_function_call_py")]
-fn host_function_call_py(
+pub(crate) fn host_function_call_py(
     py: Python<'_>,
     host_function: &Bound<'_, PyAny>,
     arguments: &Bound<'_, PyAny>,
@@ -10474,12 +10482,12 @@ fn raise_result(py: Python<'_>, value: &Bound<'_, PyAny>) -> PyErr {
 }
 
 #[pyfunction(name = "dyn_call_as_viba_data_py")]
-fn dyn_call_as_viba_data_py(py: Python<'_>, dyn_call: &Bound<'_, PyAny>) -> PyResult<P> {
+pub(crate) fn dyn_call_as_viba_data_py(py: Python<'_>, dyn_call: &Bound<'_, PyAny>) -> PyResult<P> {
     dyn_call_as_viba_data(py, dyn_call)
 }
 
 #[pyfunction(name = "pending_as_viba_data_py")]
-fn pending_as_viba_data_py(py: Python<'_>, pending: &Bound<'_, PyAny>) -> PyResult<P> {
+pub(crate) fn pending_as_viba_data_py(py: Python<'_>, pending: &Bound<'_, PyAny>) -> PyResult<P> {
     pending_as_viba_data(py, pending)
 }
 

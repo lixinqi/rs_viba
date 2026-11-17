@@ -1,0 +1,41 @@
+# A runnable viba program.
+#
+# The definitions below are the design: the types of the steps, and a hint for
+# each one.  The host implements `a_value`, `b_value`, `add` and `double`;
+# this file never spells their logic.  The answer is (3 + 4) * 2 = 14.
+
+a_value =
+    int
+  <- $env Env
+  <- { return 3 }
+
+b_value =
+    int
+  <- $env Env
+  <- { return 4 }
+
+add =
+    int
+  <- $env Env
+  <- $x int
+  <- $y int
+  <- { add the two }
+
+double =
+    int
+  <- $env Env
+  <- $x int
+  <- { double it }
+
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+a = a_value << $env args.env
+b = b_value << $env args.env
+
+sum = add << $env args.env << $x a << $y b
+
+__impl__ = double << $env args.env << $x sum

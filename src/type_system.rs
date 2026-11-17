@@ -219,6 +219,14 @@ pub fn builtin_operator(
     }
 }
 
+pub(crate) fn custom_lookup_local_pub<'py>(
+    py: Python<'py>,
+    module: &Bound<'py, PyAny>,
+    type_name: &str,
+) -> PyResult<Py<PyAny>> {
+    custom_lookup_local(py, module, type_name)
+}
+
 fn custom_lookup_local(
     py: Python<'_>,
     module: &Bound<'_, PyAny>,
