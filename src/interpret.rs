@@ -8608,6 +8608,32 @@ fn pending_call_host(py: Python<'_>, pending: &Bound<'_, PyAny>) -> PyResult<P> 
     let name = pending_full_name(py, pending)?;
     let local_name: String = gs(pending, "name")?;
     let call = pending_call_viba_data(py, pending)?;
+    let elements = g(pending, "elements")?;
+    let count = elements.call_method0("__len__")?.extract::<i64>()?;
+    let mut handed: Vec<P> = Vec::new();
+    for index in 0..count {
+        let value = pending_given_get(py, pending, index as usize)?;
+        handed.push(handed_to_host(py, pending, index as usize, &value)?);
+    }
+    let native_hosts = g(&compute, "native_hosts")
+        .ok()
+        .and_then(|value| value.extract::<bool>().ok())
+        .unwrap_or(false);
+    if native_hosts {
+        if let Some(answer) = crate::native_hosts::call(py, &module_name, &local_name, &handed) {
+            return match answer {
+                Ok(answer) => host_answer(
+                    py,
+                    &local_name,
+                    answer.bind(py),
+                    Some(&module_path),
+                    Some(&name),
+                    Some(call.bind(py)),
+                ),
+                Err(error) => Err(error),
+            };
+        }
+    }
     let get_func = g(&compute, "get_func")?;
     let host = match get_func.call1((&module_name, &local_name)) {
         Ok(host) => host,
@@ -8641,13 +8667,6 @@ fn pending_call_host(py: Python<'_>, pending: &Bound<'_, PyAny>) -> PyResult<P> 
     }
     if host.is_none() {
         return not_implemented_for(py, &module_path, &name, call.bind(py));
-    }
-    let elements = g(pending, "elements")?;
-    let count = elements.call_method0("__len__")?.extract::<i64>()?;
-    let mut handed: Vec<P> = Vec::new();
-    for index in 0..count {
-        let value = pending_given_get(py, pending, index as usize)?;
-        handed.push(handed_to_host(py, pending, index as usize, &value)?);
     }
     let answer = match host.call1(PyTuple::new(py, handed)?) {
         Ok(answer) => answer,

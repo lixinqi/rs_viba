@@ -1,0 +1,10 @@
+{
+  "hosts": {
+    "score": {
+      "a_value": "Some(Ok(Value::Int(3)))",
+      "b_value": "Some(Ok(Value::Int(4)))",
+      "add": "match (int_arg(args, 1), int_arg(args, 2)) { (Ok(x), Ok(y)) => Some(Ok(Value::Int(x + y))), _ => Some(Err(\"add expects two ints\".to_string())) }",
+      "double": "match int_arg(args, 1) { Ok(x) => Some(Ok(Value::Int(x * 2))), Err(message) => Some(Err(message)) }"
+    }
+  }
+}

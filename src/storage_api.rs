@@ -109,13 +109,19 @@ impl EnvironmentStorage {
 pub struct EnvironmentCompute {
     #[pyo3(get, set)]
     get_func: Py<PyAny>,
+    #[pyo3(get, set)]
+    native_hosts: bool,
 }
 
 #[pymethods]
 impl EnvironmentCompute {
     #[new]
-    fn new(get_func: Py<PyAny>) -> Self {
-        EnvironmentCompute { get_func }
+    #[pyo3(signature = (get_func, native_hosts = false))]
+    fn new(get_func: Py<PyAny>, native_hosts: bool) -> Self {
+        EnvironmentCompute {
+            get_func,
+            native_hosts,
+        }
     }
 }
 

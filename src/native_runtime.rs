@@ -24,7 +24,7 @@ enum Unsupported {
 
 type Compile<T> = Result<T, Unsupported>;
 
-enum Value {
+pub(crate) enum Value {
     Nil,
     Bool(bool),
     Int(i64),
@@ -681,6 +681,12 @@ fn evaluate(
                     return Ok(None);
                 };
                 values.push(value);
+            }
+            if let Some(answer) = crate::generated_host::call(&program.module_name, head, &values) {
+                return match answer {
+                    Ok(value) => Ok(Some(value)),
+                    Err(_) => Ok(None),
+                };
             }
             let get_func = environ.getattr("compute")?.getattr("get_func")?;
             let host = match get_func.call1((program.module_name.as_str(), head.as_str())) {
