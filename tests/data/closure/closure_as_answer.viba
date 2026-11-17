@@ -1,0 +1,10 @@
+__decl__ = int <- $env Env
+
+add =
+    int
+  <- $env Env
+  <- $a int
+  <- $b int
+  <- { add the two }
+g = add << $a 1 << $b 2
+__impl__ = g

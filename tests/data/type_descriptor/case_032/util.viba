@@ -1,0 +1,3 @@
+Bundle0 = int * str * bool
+
+Report1 = $only int

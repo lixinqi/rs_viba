@@ -1,0 +1,15 @@
+# 同一个 tag 给两次：`$a` 是**一个**参数的名字，第二次给的不是另一个参数，而是同一个
+# 参数又给了一次 —— 那是错的，`$a 2` 不会把 `$a 1` 顶掉。
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+add =
+	int
+	<- $env Env
+	<- $a int
+	<- $b int
+	<- { add two integer }
+__impl__ = add << $env args.env << $a 1 << $a 2 << $b 3

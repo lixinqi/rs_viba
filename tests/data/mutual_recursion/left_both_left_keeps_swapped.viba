@@ -1,0 +1,20 @@
+__decl__ =
+    Any
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import branch
+import right_both_left_keeps_swapped as right
+
+x =
+    Oneof
+    | (
+        branch.echo_or_never
+        << $env args.env << $cond (false)
+        << $get_v (builtin.echo << $x 42))
+    | (
+        branch.never_or_echo
+        << $env args.env << $cond (false)
+        << $get_v (builtin.echo << $x right.y))
+__impl__ = x

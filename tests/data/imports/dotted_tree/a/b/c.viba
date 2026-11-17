@@ -1,0 +1,4 @@
+__decl__ = int <- $env Env
+
+X = 2
+__impl__ = 2

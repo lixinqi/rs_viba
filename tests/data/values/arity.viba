@@ -1,0 +1,13 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+wrong_arity =
+	int
+	<- $env Env
+	<- $a int
+	<- $b int
+	<- { takes two }
+__impl__ = wrong_arity << $env args.env << $a 1 << $b 2

@@ -1,0 +1,11 @@
+__decl__ =
+    nil
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import add_demo as demo
+
+ret = demo << (args.env.sub_env << args.env << "add_demo")
+
+__impl__ = demo.print << args.env << ret

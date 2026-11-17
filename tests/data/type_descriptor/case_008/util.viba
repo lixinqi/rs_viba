@@ -1,0 +1,14 @@
+import util as lib
+
+Rule0 =
+  Object
+  * $ghost Missing
+  * $mix list[Missing]
+
+Bundle1[T] =
+  $v T
+
+Bundle2 =
+  Object
+  * $count int
+  * $label str

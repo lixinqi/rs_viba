@@ -1,0 +1,7 @@
+__decl__ = Any <- $env Env
+
+import branch
+import right_edge_self_definition as right
+
+A = A
+__impl__ = A

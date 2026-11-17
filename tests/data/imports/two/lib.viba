@@ -1,0 +1,11 @@
+__decl__ =
+    str
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+text =
+	str
+	<- $env Env
+	<- { answer some text }
+__impl__ = text << $env args.env

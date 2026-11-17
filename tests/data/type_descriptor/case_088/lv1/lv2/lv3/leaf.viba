@@ -1,0 +1,15 @@
+import pkg.sub.sub2.deepest
+
+Config0 =
+  Object
+  * $count int
+  * $label str
+
+Report1[T] =
+  $v T
+
+Bundle2 =
+  Object
+  * $peer pkg.sub.sub2.deepest.Config0
+
+Bundle3 = str * (int | nil)

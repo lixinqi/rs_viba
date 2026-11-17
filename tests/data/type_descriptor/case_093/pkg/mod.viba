@@ -1,0 +1,7 @@
+import pkg.sub.sub2.deepest
+
+Report0 = $only int
+
+Bundle1 =
+  Object
+  * $peer pkg.sub.sub2.deepest.Bundle0

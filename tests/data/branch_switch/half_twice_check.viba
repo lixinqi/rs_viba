@@ -1,0 +1,17 @@
+__decl__ =
+    Any
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import branch
+import pick as pick
+
+# 同一个半成品补两次：一次在这里，一次在下面 —— 它就是一个值。
+half = pick.add << $a 40
+once = half << $b 2 << $env args.env
+__impl__ =
+  branch.echo_or_never
+  << $env args.env
+  << $cond true
+  << $get_v (builtin.echo << $x once)

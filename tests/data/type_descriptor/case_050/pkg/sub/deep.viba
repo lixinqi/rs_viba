@@ -1,0 +1,10 @@
+import top as base
+
+Bundle0 =
+  Oneof
+  | $left int
+  | $right str
+
+Report1 =
+  Object
+  * $peer base.Node1

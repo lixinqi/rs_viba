@@ -1,0 +1,20 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+leaf =
+    int
+  <- $env Env
+  <- { answer seven }
+
+List[T] =
+  Oneof
+  | Object
+    * $head T
+    * $tail List[T]
+  | nil
+
+Items = $items List[int]
+__impl__ = leaf << $env args.env

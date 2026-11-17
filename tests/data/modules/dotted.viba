@@ -1,0 +1,9 @@
+__decl__ =
+    str
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import pkg.mod as mod
+
+__impl__ = mod << (args.env.sub_env << args.env << "mod")

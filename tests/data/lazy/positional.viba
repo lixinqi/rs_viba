@@ -1,0 +1,19 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+positional =
+    int
+  <- $env Env
+  <- $cond (bool <- $env Env)
+  <- $get_v (int <- $env Env)
+  <- { the value when the condition holds }
+
+tick =
+    int <- $env Env <- { one }
+condition_holds =
+    bool <- $env Env <- { the condition holds }
+
+__impl__ = positional << args.env << condition_holds << tick

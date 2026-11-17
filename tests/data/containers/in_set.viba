@@ -1,0 +1,2 @@
+# A set holds elements too.
+__impl__ = $in << $env nil << SetLiteral["a", "b"] << "b"

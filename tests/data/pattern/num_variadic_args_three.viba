@@ -1,0 +1,5 @@
+import demo.num_variadic_args as num_variadic_args
+
+__decl__ = Any <- $env Env
+
+__impl__ = num_variadic_args[int, str, list[int]].value

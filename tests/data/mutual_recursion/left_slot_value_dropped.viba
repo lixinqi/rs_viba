@@ -1,0 +1,20 @@
+__decl__ =
+    Any
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import branch
+import right_slot_value_dropped as right
+
+x =
+    Oneof
+    | (
+        branch.echo_or_never
+        << $env args.env << $cond (false)
+        << $get_v (builtin.echo << $x right.y))
+    | (
+        branch.never_or_echo
+        << $env args.env << $cond (false)
+        << $get_v (builtin.echo << $x 7))
+__impl__ = x

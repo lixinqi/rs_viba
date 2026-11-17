@@ -1,0 +1,7 @@
+__decl__ = Any <- $env Env
+
+import branch
+import right_never_absorbs_second as right
+
+x = right.y * never
+__impl__ = x

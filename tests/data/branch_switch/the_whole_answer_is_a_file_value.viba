@@ -1,0 +1,10 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import answers as answers
+
+__impl__ =
+answers << (args.env.tmp_env << args.env)

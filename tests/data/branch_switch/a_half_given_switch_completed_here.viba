@@ -1,0 +1,11 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import branch as branch
+import workshop as workshop
+
+__impl__ =
+    workshop.if_true << $get_v (builtin.echo << $x 7) << $env args.env

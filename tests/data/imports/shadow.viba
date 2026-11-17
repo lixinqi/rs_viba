@@ -1,0 +1,5 @@
+__decl__ = int <- $env Env
+
+import plain as plain
+plain = 5
+__impl__ = plain

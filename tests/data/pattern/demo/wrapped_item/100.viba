@@ -1,0 +1,5 @@
+pattern list[A]
+
+Wrapped = $item A
+
+type = Wrapped

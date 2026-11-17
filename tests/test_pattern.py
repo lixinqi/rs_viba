@@ -1,0 +1,779 @@
+"""Pattern: a generic is a directory, and one of its files answers.
+
+The four worked examples of `viba/core/viba-pattern.md` live in `tests/data/pattern/demo/`:
+
+    demo/is_base_type/      100 restricts to bool | int | float | str, 200 extracts
+    demo/is_compatable/     four files, an equality among them
+    demo/element_type_of/   list[A] -> A, set[A] -> A, dict[A, B] -> (A, B)
+    demo/ret_type_of/       A <- (() | nil) -> A, then A <- B -> A, then
+                            A <- B <- C -> A: the chain's length picks the file,
+                            and the first file's restriction is what the pattern
+                            matcher checks on its own (its answer is the second
+                            file's answer too, so the order between the two is
+                            only observable where the files answer differently —
+                            `is_base_type[bool]` is where that is pinned)
+    demo/num_generic_args/  dict[A, B] -> 2, list[A] -> 1, A -> 0: the pattern
+                            itself holds the structure that is counted
+    demo/num_variadic_args/ one file per arity, so [] -> 0, [A] -> 1, [A, B] -> 2
+    demo/wrapper.viba        a function in, the same function's call out: a module
+                            that hands what it was given to `apply` —
+                            `wrapper << inc << $x 1 << args.env` answers inc(1).
+                            The product of arguments has 1 member for `inc` and 2
+                            for `add`, and `apply_impl` picks its file by that
+                            count, so a partial call (`wrapper_partial.viba`:
+                            `add2 = add << $a 2`) arrives with one member and
+                            lands on the one-member file
+
+`demo/arg_name_of/` and `demo/tagged_again/` are the two sides of a tag given as
+a symbol: `pattern tagged[arg_name, T]` takes the symbol the argument carries
+(`arg_name_of[$a int]` answers `"a"`), and `__decl__ = tagged[arg_name, T]`
+builds the same tag back out of it. `tests/data/member/` holds the chain-head
+side: `tagged["f"] << box << …` takes the member the symbol names, and
+`$get_attr << box << name << …` takes it by the name a value spells.
+
+`demo/wrapped_item/` is the one file whose answer is its own definition, so the
+call's parameter has to reach into that definition too. `broken/` and
+`loose_pattern.viba` are the mistakes: a file named anything but its order,
+a directory with no marker, a file with no `__decl__`, a decision that fails, a
+number of `pattern` lines that is not the argument count, a marker whose text is
+`pattern`,
+and `pattern` outside a generic's directory.
+
+Where a design is taken (the judgment and the descriptor pool), a generic
+application is the type its decision picked; where a program runs (the
+interpreter), it is that type as viba data — and when the type is a function
+chain, it is the call that chain stands for.
+
+    python3 tests/test_pattern.py
+"""
+
+import os
+import sys
+import tempfile
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from interpreter_support import (answer_of, message_of, error_of, is_ok,
+                                 stop_tag, Checks, Host, value_of)
+
+from rs_viba import viba_ast
+from rs_viba.interpret import interpret
+from rs_viba.is_complete import is_complete
+from rs_viba.is_sub_type import is_sub_type
+from rs_viba.reflect import VibaData, access, by_tag
+from rs_viba.pattern import (GENERIC_FILE, load_generic, patterns_of,
+                          structural_pattern_match)
+from rs_viba.type import (AstNodeType, Ok, PROGRAM_ERR_TAG, Err,
+                       custom_module)
+from rs_viba.viba_type_descriptor import (empty_pool, parse_viba_file,
+                                       pool_add_file, pool_find_definition)
+
+CASES = Path(__file__).resolve().parent / "data" / "pattern"
+
+checks = Checks("pattern")
+check = checks.check
+labelled = checks.labelled
+
+
+def _case(name: str) -> str:
+    return str(CASES / f"{name}.viba")
+
+
+# (文件, 跑出来该是什么值, 这是哪一条)
+RUNTIME_CASES = [
+    ("is_base_type_bool", True, "is_base_type[bool]"),
+    ("is_base_type_list", False, "is_base_type[list[int]]"),
+    ("is_base_type_str", True, "is_base_type[str]"),
+    ("is_compatable_bool_int", True, "is_compatable[bool, int]"),
+    ("is_compatable_int_bool", True, "is_compatable[int, bool]"),
+    ("is_compatable_lists", True, "is_compatable[list[int], list[int]]"),
+    ("is_compatable_float_str", False, "is_compatable[float, str]"),
+    ("num_generic_args_dict", 2, "num_generic_args[dict[int, str]]"),
+    ("num_generic_args_list", 1, "num_generic_args[list[int]]"),
+    ("num_generic_args_set", 1, "num_generic_args[set[float]]"),
+    ("num_generic_args_bool", 0, "num_generic_args[bool]"),
+    ("num_generic_args_function", 0, "num_generic_args[int <- int]"),
+    ("num_variadic_args_none", 0, "num_variadic_args[]"),
+    ("num_variadic_args_one", 1, "num_variadic_args[bool]"),
+    ("num_variadic_args_two", 2, "num_variadic_args[bool, str]"),
+    ("num_variadic_args_three", 3, "num_variadic_args[int, str, list[int]]"),
+]
+
+# (文件, 给出的类型在源码里是什么, 这是哪一条)
+EXTRACTED_CASES = [
+    ("element_of_a_list", "int", "element_type_of[list[int]]"),
+    ("element_of_a_set", "float", "element_type_of[set[float]]"),
+    ("element_of_a_dict", "(int, str)", "element_type_of[dict[int, str]]"),
+    ("element_of_a_local_name", "Local", "the caller's own name is kept"),
+    ("element_of_a_wrapped", "$item int", "the chosen file's definition, bound"),
+    ("ret_of_int_int", "int", "ret_type_of[int <- int]"),
+    ("ret_of_float_unit", "float", "ret_type_of[float <- ()]"),
+    ("ret_of_three", "(int, str)", "ret_type_of[(int, str) <- bool <- str]"),
+    ("itself_of_a_list", "list[int]", "a bare `pattern A` takes the object itself"),
+    ("itself_of_a_function", "int <- str", "…and a function chain as the source has it"),
+    ("itself_of_a_tuple", "(int, str)", "…and a tuple, with nothing extracted"),
+    ("itself_of_a_literal", "true", "…and a literal value"),
+    ("ret_of_a_module", "int", "a module argument is matched as its `__decl__`"),
+    ("decl_pair_of_a_module", "(int, $env Env)",
+     "…and that chain is taken apart positionally"),
+]
+
+
+def run(scratch: Path):
+    _the_runtime_answers()
+    _what_was_extracted()
+    _the_judgment_answers()
+    _the_pattern_matcher()
+    _the_arity_is_the_file()
+    _a_count_is_a_bucket(scratch)
+    _a_sum_is_no_bucket(scratch)
+    _every_name_says_what_it_takes()
+    _the_decision_fails_loudly()
+    _a_generic_is_no_module()
+    _a_function_type_is_a_call()
+    _the_wrapper_forwards()
+    _a_tag_given_as_a_symbol()
+    _a_design_is_complete_through_it()
+    _the_pool_holds_a_generic()
+    _the_reflection_takes_it()
+
+
+def _environ():
+    return Host().environ(viba_path=str(CASES))
+
+
+class _WrapperHost(Host):
+    """`demo/wrapper.viba` 转手给谁：这里它包的是 `inc`（`add` 是共用宿主处理的）。"""
+
+    def get_func(self, module_path, func_name):
+        if func_name == "inc":
+            return lambda env, x: x.value + 1
+        return super().get_func(module_path, func_name)
+
+
+def _wrapper_environ():
+    return _WrapperHost().environ(viba_path=str(CASES))
+
+
+def _the_runtime_answers():
+    """一份模块应用一个泛型：选中的那一支就是它给出的值。"""
+    environ = _environ()
+    for name, want, label in RUNTIME_CASES:
+        result = interpret(_case(name), environ)
+        check(is_ok(result) and value_of(result) is want,
+              f"{label} -> {want}: {result!r}")
+
+
+def _what_was_extracted():
+    """萃取到的类型，就是结果里给出的那份。"""
+    environ = _environ()
+    for name, want, label in EXTRACTED_CASES:
+        result = interpret(_case(name), environ)
+        got = (viba_ast.unparse_type(answer_of(result).data)
+               if is_ok(result) else repr(result))
+        check(is_ok(result) and got == want,
+              f"{label} -> {want}: {got!r}")
+
+
+# ----------------------------------------------------------------------
+# The judgment and the pool: the same application, taken as a type
+# ----------------------------------------------------------------------
+
+
+def _environment(roots=None):
+    """Module name -> module, under `roots` (the case directory by default).
+
+    A name is a generic when its directory has the marker, a file otherwise:
+    what `_Runner` does for a run, done here without a run.
+    """
+    roots = (CASES,) if roots is None else tuple(roots)
+    cache = {}
+
+    def source_of(path):
+        try:
+            return Path(path).read_text()
+        except OSError:
+            return None
+
+    def listing(directory):
+        try:
+            return Ok(os.listdir(directory))
+        except OSError as exc:
+            return Err(str(exc))
+
+    def module_of(path, name, text):
+        module = custom_module(text, environment)
+        module.imports = _imports(module.module.body)
+        cache[name] = module
+        return Ok(module)
+
+    def environment(name):
+        if name in cache:
+            return Ok(cache[name])
+        for root in roots:
+            directory = root.joinpath(*name.split("."))
+            if (directory / GENERIC_FILE).is_file():
+                got = load_generic(str(directory), name, source_of, listing, module_of)
+                if isinstance(error_of(got), Err):
+                    return got
+                cache[name] = got.ok_value
+                return Ok(got.ok_value)
+            path = directory.with_suffix(".viba")
+            if path.is_file():
+                return module_of(str(path), name, path.read_text())
+        return Err(f"no module {name!r}")
+
+    return environment
+
+
+def _imports(body) -> dict:
+    return {stmt.alias or stmt.module: stmt.module
+            for stmt in body if isinstance(stmt, viba_ast.Import)}
+
+
+def _module_of(source: str):
+    module = custom_module(source, _environment())
+    module.imports = _imports(module.module.body)
+    return module
+
+
+def _as_type(text: str, module):
+    return AstNodeType(viba_ast.parse(f"__x__ = {text}").body[0].body, module)
+
+
+def _judge(source: str, sub: str, sup: str):
+    module = _module_of(source)
+    got = is_sub_type(_as_type(sub, module), _as_type(sup, module))
+    return got.ok_value if isinstance(got, Ok) else got
+
+
+# (源, 左, 右, 想要什么, 这是哪一条)
+JUDGMENT_CASES = [
+    ("import demo.is_base_type as g\nX = g[bool].value\n", "X", "true", True,
+     "a known base type answers true"),
+    ("import demo.is_base_type as g\nX = g[list[int]].value\n", "X", "false", True,
+     "anything else answers false"),
+    ("import demo.is_base_type as g\nX = g[str].value\n", "X", "int", False,
+     "a literal bool type is not an int"),
+    ("import demo.element_type_of as g\nX = g[list[int]].type\n", "X", "int", True,
+     "list[A] extracts A"),
+    ("import demo.element_type_of as g\nX = g[set[float]].type\n", "X", "float", True,
+     "set[A] extracts A"),
+    ("import demo.element_type_of as g\nX = g[dict[int, str]].type\n", "X", "(int, str)", True,
+     "dict[A, B] extracts the pair"),
+    ("import demo.element_type_of as g\nX = g[list[int]].type\n", "X", "str", False,
+     "the extraction is not some other type"),
+    ("import demo.element_type_of as g\nLocal = int\nX = g[list[Local]].type\n",
+     "X", "int", True,
+     "the extracted name is taken in the module that gave the argument"),
+    ("import demo.wrapped_item as g\nX = g[list[int]].type\n", "X", "$item int", True,
+     "the chosen file's own definition is taken in that file"),
+    ("import demo.ret_type_of as g\nX = g[float <- ()].type\n", "X", "float", True,
+     "a one-argument chain whose argument is a unit"),
+    ("import demo.ret_type_of as g\nX = g[int <- int].type\n", "X", "int", True,
+     "a one-argument chain the first file refuses falls to the second"),
+    ("import demo.ret_type_of as g\nX = g[(int, str) <- bool <- str].type\n",
+     "X", "(int, str)", True,
+     "a three-part chain extracts its result"),
+    ("import demo.call_it as g\nX = g[list[int]].type\n", "X", "int <- int", True,
+     "a chosen __decl__ may be a function type, its $env not a parameter"),
+    ("import demo.call_it as g\nX = g[list[int]].type\n", "X", "int <- int <- int", False,
+     "and it is that function type and no other"),
+    ("import demo.num_generic_args as g\nX = g[dict[int, str]].value\n", "X", "2", True,
+     "the pattern's own structure is what is counted"),
+    ("import demo.num_generic_args as g\nX = g[list[int]].value\n", "X", "1", True,
+     "one argument, one"),
+    ("import demo.num_generic_args as g\nX = g[bool].value\n", "X", "0", True,
+     "no application at all is none"),
+    ("import demo.num_generic_args as g\nX = g[list[int]].value\n", "X", "2", False,
+     "and the count is the one the file says, not another"),
+    ("import demo.is_compatable as g\nX = g[bool, int].value\n", "X", "true", True,
+     "one restriction for both positions"),
+    ("import demo.is_compatable as g\nX = g[float, str].value\n", "X", "false", True,
+     "an equality that does not hold falls through to the last file"),
+    ("import demo.element_type_of as g\nX = g[list[int]].type\n", "int", "X", True,
+     "the extraction counts the same from the other side"),
+    ("import demo.element_type_of as g\nX = g[bool].type\n", "X", "never", "error",
+     "a decision that fails is a Err"),
+]
+
+
+def _the_judgment_answers():
+    for source, sub, sup, want, label in JUDGMENT_CASES:
+        got = _judge(source, sub, sup)
+        if want == "error":
+            check(isinstance(error_of(got), Err) and "no pattern" in message_of(got),
+                  f"{label}: {got!r}")
+            continue
+        check(got is want, f"{label}: {sub} <: {sup} -> {got!r}, wanted {want}")
+
+
+# ----------------------------------------------------------------------
+# The pattern matcher itself
+# ----------------------------------------------------------------------
+
+
+def _pattern_case(source: str):
+    module = _module_of(source)
+    return module, patterns_of(module.module.body)
+
+
+def _node(text: str):
+    return viba_ast.parse(f"__x__ = {text}").body[0].body
+
+
+def _match(pattern, module, argument: str):
+    return structural_pattern_match(pattern, module, _node(argument), module, {})
+
+
+def _the_pattern_matcher():
+    """structural_pattern_match: 萃取到的类型就在这次给出的绑定里。"""
+    module, patterns = _pattern_case("pattern A\n")
+    got = _match(patterns[0], module, "int")
+    check(isinstance(got, Ok) and isinstance(got.ok_value, dict)
+          and viba_ast.unparse_type(got.ok_value["A"].ast_node) == "int",
+          f"a bare parameter takes the whole argument: {got!r}")
+
+    module, patterns = _pattern_case("pattern bool | int | float | str\n")
+    check(_match(patterns[0], module, "bool").ok_value == {},
+          "a restriction with no parameter has no bindings")
+    check(_match(patterns[0], module, "true").ok_value == {},
+          "a literal fits its base type (subtyping, not equality)")
+    check(_match(patterns[0], module, "list[int]").ok_value is None,
+          "a container is not a base type")
+
+    module, patterns = _pattern_case("pattern list[A]\n")
+    got = _match(patterns[0], module, "list[int]")
+    check(isinstance(got.ok_value, dict)
+          and viba_ast.unparse_type(got.ok_value["A"].ast_node) == "int",
+          f"a parameter inside a container takes the element: {got!r}")
+    check(_match(patterns[0], module, "set[int]").ok_value is None,
+          "another container family does not fit")
+    check(_match(patterns[0], module, "list[int, str]").ok_value is None,
+          "an application of the wrong arity does not fit")
+
+    module, patterns = _pattern_case("pattern A <- (() | nil)\n")
+    got = _match(patterns[0], module, "float <- ()")
+    check(isinstance(got.ok_value, dict)
+          and viba_ast.unparse_type(got.ok_value["A"].ast_node) == "float",
+          f"a function pattern takes result and arguments apart: {got!r}")
+    check(_match(patterns[0], module, "int <- int").ok_value is None,
+          "the argument position has to fit")
+    check(_match(patterns[0], module, "int <- int <- int").ok_value is None,
+          "a longer chain does not fit a one-argument pattern")
+
+    module, patterns = _pattern_case(
+        "pattern A <- $env Env <- B\n"
+        "add = int <- $env Env <- $a int <- $b int\n"
+        "add2 = add << $a 2\n")
+    got = _match(patterns[0], module, "add2")
+    check(isinstance(got.ok_value, dict)
+          and viba_ast.unparse_type(got.ok_value["A"].ast_node) == "int"
+          and viba_ast.unparse_type(got.ok_value["B"].ast_node) == "$b int",
+          f"an argument whose source is a call counts as the type it stands "
+          f"for: {got!r}")
+    got = _match(patterns[0], module, "add << $b 1 << $b 2")
+    check(isinstance(error_of(got), Err) and "no such argument" in message_of(got),
+          f"a call that cannot be given is a mistake in the argument, not a "
+          f"mismatch: {got!r}")
+
+    module, patterns = _pattern_case("pattern A\npattern A\n")
+    first = _match(patterns[0], module, "int")
+    check(isinstance(first.ok_value, dict)
+          and viba_ast.unparse_type(first.ok_value["A"].ast_node) == "int",
+          f"the first pattern binds the parameter: {first!r}")
+    same = structural_pattern_match(patterns[1], module, _node("int"), module,
+                                    first.ok_value)
+    check(isinstance(same.ok_value, dict),
+          f"the same type again fits the equality: {same!r}")
+    other = structural_pattern_match(patterns[1], module, _node("str"), module,
+                                     dict(first.ok_value))
+    check(other.ok_value is None,
+          f"another type does not fit the equality: {other!r}")
+
+    module, patterns = _pattern_case("pattern ...\n")
+    got = _match(patterns[0], module, "int")
+    check(isinstance(error_of(got), Err) and "ellipsis" in message_of(got),
+          f"ellipsis is no pattern: {got!r}")
+
+
+# ----------------------------------------------------------------------
+# The arity each file declares
+# ----------------------------------------------------------------------
+
+
+def _the_arity_is_the_file():
+    """一份文件里 `pattern` 行有几行，就收几个实参；没有这个个数的，当场报个数。"""
+    check(_judge("import demo.num_variadic_args as g\nX = g[].value\n", "X", "0") is True,
+          "no line at all is the generic of no parameters")
+    check(_judge("import demo.num_variadic_args as g\nX = g[bool, str].value\n", "X", "2") is True,
+          "two lines are the generic of two")
+    got = _judge("import demo.num_variadic_args as g\nX = g[bool, str, int, float].value\n",
+                 "X", "0")
+    check(isinstance(error_of(got), Err)
+          and "takes 0, 1, 2 or 3 parameters, not 4" in message_of(got),
+          f"an arity no file declares names the counts: {got!r}")
+
+
+# ----------------------------------------------------------------------
+# The count a file name gives: the bucket the decision jumps to
+# ----------------------------------------------------------------------
+
+
+def _a_count_is_a_bucket(scratch: Path):
+    """名字上带份数的文件：份数对不上就不取，对上了才取，取到的与名字不符当场说。
+
+    用例落盘到 `scratch`（临时目录）：一份编不过的文件正好试出「没取」，另一份名字与
+    `pattern` 行对不上的试出「取了就查」。
+    """
+    root = scratch / "a-count-is-a-bucket"
+    generic = root / "counted"
+    generic.mkdir(parents=True)
+    (generic / GENERIC_FILE).write_text("# __generic__.viba\n")
+    (generic / "2_200.viba").write_text("pattern A * B\n\nvalue = 2\n")
+    # 这一份编不过，而且只有摆出三份的应用才轮得到它：取到了就该报编不过
+    (generic / "3_300.viba").write_text("pattern A * B * C\n\nvalue = ((\n")
+
+    def answered(name: str, argument: str, where: Path = root):
+        case = where / f"{name}.viba"
+        case.write_text(f"import counted as counted\n\n__impl__ = counted[{argument}].value\n")
+        return interpret(str(case), Host().environ(viba_path=str(where)))
+
+    got = answered("two", "int * str")
+    check(is_ok(got) and value_of(got) == 2,
+          f"摆出两份的应用取 2_200，给出 2：{got!r}")
+    got = answered("three", "int * str * bool")
+    check(stop_tag(got) == PROGRAM_ERR_TAG and "cannot parse" in message_of(got),
+          f"摆出三份的应用取到 3_300，当场说它编不过：{got!r}")
+
+    # 名字上给的份数与 `pattern` 行要的份数不符：取到那一份就说
+    wrong = root / "wrong"
+    wrong.mkdir()
+    (wrong / GENERIC_FILE).write_text("# __generic__.viba\n")
+    (wrong / "3_100.viba").write_text("pattern A * B\n\nvalue = 3\n")
+    (root / "wrong_case.viba").write_text(
+        "import wrong as wrong\n\n__impl__ = wrong[int * str].value\n")
+    got = interpret(str(root / "wrong_case.viba"), Host().environ(viba_path=str(root)))
+    check(stop_tag(got) == PROGRAM_ERR_TAG
+          and "the name says the file takes 3 parts, and its `pattern` lines take 2"
+          in message_of(got),
+          f"名字说三份、pattern 要两份：{got!r}")
+
+    # `pattern A` 那样的行要不出固定份数，名字上就不许带
+    loose = root / "loose"
+    loose.mkdir()
+    (loose / GENERIC_FILE).write_text("# __generic__.viba\n")
+    (loose / "2_100.viba").write_text("pattern A\n\nvalue = 2\n")
+    (root / "loose_case.viba").write_text(
+        "import loose as loose\n\n__impl__ = loose[int * str].value\n")
+    got = interpret(str(root / "loose_case.viba"), Host().environ(viba_path=str(root)))
+    check(stop_tag(got) == PROGRAM_ERR_TAG
+          and "and a `pattern` line in it takes no count" in message_of(got),
+          f"名字带了份数、pattern 要不出份数：{got!r}")
+
+
+def _a_sum_is_no_bucket(scratch: Path):
+    """和类型不参与分桶：实参里有和就一份文件都不跳，和模式的名字上给不出份数。
+
+    用例落盘到 `scratch`（临时目录）。一份编不过的 `3_300.viba` 正好试出「跳没跳」：积实参摆出
+    两份，它被跳过；和实参摆不出份数，它当场被取出来并报错。`pattern A | B | C` 那份则试出
+    和为什么不能有份数 —— 同一份文件命中两个分支个数的和。
+    """
+    root = scratch / "a-sum-is-no-bucket"
+    generic = root / "summed"
+    generic.mkdir(parents=True)
+    (generic / GENERIC_FILE).write_text("# __generic__.viba\n")
+    (generic / "2_200.viba").write_text("pattern A * B\n\nvalue = 2\n")
+    (generic / "3_300.viba").write_text("pattern A * B * C\n\nvalue = ((\n")
+
+    def asked(name: str, generic_name: str, argument: str, where: Path = root):
+        case = where / f"{name}.viba"
+        case.write_text(f"import {generic_name} as {generic_name}\n\n"
+                        f"__impl__ = {generic_name}[{argument}].value\n")
+        return interpret(str(case), Host().environ(viba_path=str(root)))
+
+    got = asked("a_product", "summed", "int * str")
+    check(is_ok(got) and value_of(got) == 2,
+          f"积实参摆出两份，3_300 被跳过，2_200 给出 2：{got!r}")
+
+    got = asked("a_sum", "summed", "int | str")
+    check(stop_tag(got) == PROGRAM_ERR_TAG and "cannot parse" in message_of(got),
+          f"和实参摆不出份数，3_300 也被取出来并报它编不过：{got!r}")
+
+    either = root / "either"
+    either.mkdir()
+    (either / GENERIC_FILE).write_text("# __generic__.viba\n")
+    (either / "100.viba").write_text("pattern A | B | C\n\nvalue = 1\n")
+    for name, argument in (("two_branches", "int | str"),
+                           ("three_branches", "int | str | bool")):
+        got = asked(name, "either", argument)
+        check(is_ok(got) and value_of(got) == 1,
+              f"同一份 pattern A | B | C 命中 {argument}：{got!r}")
+
+    named = root / "named"
+    named.mkdir()
+    (named / GENERIC_FILE).write_text("# __generic__.viba\n")
+    (named / "2_100.viba").write_text("pattern A | B | C\n\nvalue = 1\n")
+    got = asked("named_case", "named", "int | str")
+    check(stop_tag(got) == PROGRAM_ERR_TAG
+          and "and a `pattern` line in it takes no count" in message_of(got),
+          f"和模式的份数给不出来：{got!r}")
+
+
+def _every_name_says_what_it_takes():
+    """仓库里每一份模式文件：名字上给的份数与它 `pattern` 行要的份数一致。
+
+    决断取到那一份时才查这件事，所以这里自己把 `viba/` 下的泛型取一遍：哪一份的名字
+    给错了，不必等某次应用碰巧取到它。
+    """
+    root = Path(__file__).resolve().parent.parent / "viba"
+    environment = _environment((root, root / "builtin"))
+    for marker in sorted(root.rglob(GENERIC_FILE)):
+        name = ".".join(marker.parent.relative_to(root).parts)
+        handed = environment(name)
+        check(isinstance(handed, Ok), f"{name} 取得动：{handed!r}")
+        if not isinstance(handed, Ok):
+            continue
+        for entry in handed.ok_value.entries:
+            got = entry.take()
+            check(isinstance(got, Ok), f"{entry.path}：名字上给的份数对得上：{got!r}")
+
+
+# ----------------------------------------------------------------------
+# Mistakes
+# ----------------------------------------------------------------------
+
+
+BROKEN_CASES = [
+    ("broken_no_marker", "not found", "a directory without the marker is no generic"),
+    ("broken_named_badly", "named by its order", "a file named anything but a number"),
+    ("broken_no_def", "answers a module", "a pattern file that gives no answer member"),
+    ("broken_no_answer", "no pattern", "a decision that fails"),
+    ("broken_two_params", "takes 2 parameters",
+     "a number of `pattern` lines that is not the argument count"),
+    ("broken_marker", "numbered files", "a marker whose text is `pattern`"),
+    ("loose_pattern", "numbered files", "pattern outside a generic's directory"),
+]
+
+
+def _the_decision_fails_loudly():
+    environ = _environ()
+    for name, want, label in BROKEN_CASES:
+        labelled(interpret(_case(name), environ), want, label)
+
+
+def _a_generic_is_no_module():
+    """泛型不是模块：它有应用，没有定义。"""
+    got = _judge("import demo.is_base_type as g\nX = g\n", "X", "int")
+    check(isinstance(error_of(got), Err) and "generic" in message_of(got),
+          f"a bare generic name is not a type: {got!r}")
+
+    labelled(interpret(_case("a_generic_is_no_program"), _environ()),
+             "is a generic", "a generic is not a program either")
+
+
+def _a_function_type_is_a_call():
+    """选中的那份文件的成员是个函数链时，这个名字代表的就是那次调用。"""
+    result = interpret(_case("call_it_answer"), _environ())
+    shown = (viba_ast.unparse_type(answer_of(result).data)
+             if is_ok(result) else repr(result))
+    check(is_ok(result) and shown == "call_it[list[int]].type",
+          f"the member stands for the call it is: {shown!r}")
+
+
+def _the_wrapper_forwards():
+    """拿一个函数换一个调用：函数与实参积先给，环境最后给，缀在返回的那次调用末尾。"""
+    check(value_of(interpret(_case("wrapper_inc"), _wrapper_environ())) == 2,
+          "wrapper << inc << $x 1 << args.env answers inc(1)")
+    check(value_of(interpret(_case("wrapper_add"), _wrapper_environ())) == 3,
+          "wrapper << add << $a 1 * $b 2 << args.env answers add(1, 2)")
+    check(value_of(interpret(_case("wrapper_kept"), _wrapper_environ())) == 2,
+          "kept as a value, the call is still the call it stands for")
+    check(value_of(interpret(_case("wrapper_partial"), _wrapper_environ())) == 3,
+          "add2 = add << $a 2 还欠一个实参，积里就只有一个成员，"
+          "所以走一个成员的那一支")
+
+def _a_tag_given_as_a_symbol():
+    """`tagged[...]`：符号在字符串里给出，字符串就是那个 tag。"""
+    folded = _node('tagged["a", int]')
+    check(isinstance(folded, viba_ast.Tagged) and folded.tag == "$a"
+          and viba_ast.unparse_type(folded.type) == "int",
+          f"a symbol given in a string is the tag it spells: {folded!r}")
+    check(isinstance(_node('tagged["hello"]'), viba_ast.TypeApp),
+          "one argument stays as given: a member does not stand alone, so a "
+          "chain head is what takes it (test_interpreter_member.py)")
+    check(isinstance(_node("tagged[name, int]"), viba_ast.TypeApp),
+          "a symbol that is a name is left for the decision to take")
+
+    for given in ('tagged["a b", int]', "tagged[1, int]",
+                  "tagged[a, b, c]"):
+        try:
+            viba_ast.parse(f"X = {given}\n")
+            check(False, f"{given} is refused in the source")
+        except SyntaxError as exc:
+            check("no symbol" in str(exc) or "takes one argument" in str(exc),
+                  f"{given} is refused in the source: {exc}")
+
+    got = _judge('X = tagged["a", int]\n', "X", "$a int")
+    check(got is True, f"a tag given as a string is the tagged type: {got!r}")
+    got = _judge('X = tagged["a", int]\n', "$a int", "X")
+    check(got is True, f"and the other way round: {got!r}")
+    got = _judge('X = tagged["a", int]\n', "X", "$b int")
+    check(got is False, f"another symbol is another tag: {got!r}")
+
+    tagged = interpret(_case("tagged_as_symbol"), _environ())
+    as_tag = interpret(_case("tagged_as_a_tag"), _environ())
+    check(is_ok(tagged) and is_ok(as_tag)
+          and viba_ast.unparse_type(answer_of(tagged).data)
+          == viba_ast.unparse_type(answer_of(as_tag).data) == "$a 3",
+          "the application answers the value the tag gives")
+
+    check(value_of(interpret(_case("arg_name_of_a"), _environ())) == "a",
+          "a tagged pattern takes the symbol the argument carries")
+    got = _judge("import demo.arg_name_of as g\nX = g[$a int].value\n", "X", '"a"')
+    check(got is True, f"and the answer is that string: {got!r}")
+    got = _judge("import demo.arg_name_of as g\nX = g[$a int].value\n", "X", '"b"')
+    check(got is False, f"not another symbol: {got!r}")
+
+    again = interpret(_case("tagged_again_a"), _environ())
+    check(is_ok(again)
+          and viba_ast.unparse_type(answer_of(again).data) == "$a int",
+          f"the symbol a decision bound builds the tag again: {again!r}")
+    for sub, sup, want in (("X", "$a int", True), ("$a int", "X", True),
+                           ("X", "$b int", False)):
+        got = _judge("import demo.tagged_again as g\nX = g[$a int].type\n", sub, sup)
+        check(got is want,
+              f"the type a decision builds: {sub} <: {sup} -> {got!r}")
+
+    got = _judge("import demo.tagged_again as g\nX = g[bool <- int <- $a str].type\n",
+                 "X", "bool <- int <- $a str")
+    check(got is True,
+          f"a tag inside the chain it appears in: {got!r}")
+    got = _judge("import demo.tagged_again as g\nX = g[bool <- int <- $a str].type\n",
+                 "X", "bool <- int <- $b str")
+    check(got is False, f"and the symbol is still the one it took: {got!r}")
+
+
+# ----------------------------------------------------------------------
+# Completeness, and the pool
+# ----------------------------------------------------------------------
+
+
+def _library():
+    """(file path, content) for every .viba file under `CASES`."""
+    found = []
+    for path in sorted(CASES.rglob("*.viba")):
+        rel = path.relative_to(CASES).with_suffix("")
+        module = ".".join(rel.parts)
+        found.append((str(rel), path.read_text(), module))
+    return found
+
+
+def _a_design_is_complete_through_it():
+    library = [(path, source) for path, source, _module in _library()]
+    check(is_complete("import demo.is_base_type as g\nX = g[bool].value\n", library),
+          "a decision that picks a literal is complete")
+    check(is_complete("import demo.element_type_of as g\nX = g[list[int]].type\n", library),
+          "a decision that extracts a leaf name is complete")
+    check(not is_complete("import demo.element_type_of as g\nX = g[bool].type\n", library),
+          "a decision that fails is incomplete")
+    check(not is_complete('import demo.element_type_of as g\nX = g[list[{todo}]].type\n',
+                          library),
+          "an extracted piece with no leaf is incomplete")
+    check(is_complete("import demo.tagged_again as g\nX = g[$a int].type\n", library),
+          "a tag a decision built is a complete design")
+
+
+def _the_pool_holds_a_generic():
+    pool = empty_pool()
+    for path, source, module in _library():
+        if not module.startswith("demo.is_base_type"):
+            continue
+        parsed = parse_viba_file(pool, source, path, module)
+        check(isinstance(parsed, Ok), f"the pool compiles {module}: {parsed!r}")
+        added = pool_add_file(pool, parsed.ok_value)
+        if isinstance(error_of(added), Err):
+            check(False, f"the pool takes {module}: {added!r}")
+            return
+        pool = added.ok_value
+    entry = "import demo.is_base_type as g\nX = g[bool].value\n"
+    parsed = parse_viba_file(pool, entry, "entry.viba", "entry")
+    pool = pool_add_file(pool, parsed.ok_value).ok_value
+    module = pool.module_environment("entry").ok_value
+    got = is_sub_type(_as_type("X", module), _as_type("true", module))
+    check(isinstance(got, Ok) and got.ok_value is True,
+          f"a pool serves the generic its directory holds: {got!r}")
+
+
+def _the_reflection_takes_it():
+    """一份设计里有泛型应用时，反序列化实例也按决断往下走。"""
+    pool = empty_pool()
+    sources = [(path, source, module) for path, source, module in _library()
+               if module.startswith("demo.element_type_of")
+               or module.startswith("demo.wrapped_item")
+               or module.startswith("demo.tagged_again")
+               or module.startswith("demo.arg_name_of")]
+    sources.append(("design.viba",
+                    "import demo.element_type_of as g\n"
+                    "import demo.wrapped_item as w\n"
+                    "import demo.tagged_again as t\n"
+                    "import demo.arg_name_of as n\n"
+                    "Picked = $value g[list[int]].type\n"
+                    "Boxed = $value w[list[str]].type\n"
+                    "Again = $value t[$a int].type\n"
+                    "Named = $value n[$a int].value\n", "design"))
+    for path, source, module in sources:
+        parsed = parse_viba_file(pool, source, path, module)
+        if isinstance(error_of(parsed), Err):
+            check(False, f"the pool compiles {module}: {parsed!r}")
+            return
+        pool = pool_add_file(pool, parsed.ok_value).ok_value
+
+    definition = pool_find_definition(pool, "design.Picked").ok_value
+    node = access.root(definition, VibaData(viba_ast.Tagged("$value", viba_ast.Constant(3))))
+    check(isinstance(node, Ok), f"a design whose member is extracted from a list: {node!r}")
+    if isinstance(node, Ok):
+        leaf = access.leaf(access.get(node.ok_value, by_tag("$value")).ok_value)
+        check(isinstance(leaf, Ok) and leaf.ok_value == 3,
+              f"an int sits where the extraction said it did: {leaf!r}")
+
+    definition = pool_find_definition(pool, "design.Again").ok_value
+    again = VibaData(viba_ast.Tagged("$value", viba_ast.Tagged("$a", viba_ast.Constant(3))))
+    node = access.root(definition, again)
+    check(isinstance(node, Ok), f"a design whose member is a tag a decision built: {node!r}")
+    if isinstance(node, Ok):
+        leaf = access.leaf(access.get(
+            access.get(node.ok_value, by_tag("$value")).ok_value, by_tag("$a")).ok_value)
+        check(isinstance(leaf, Ok) and leaf.ok_value == 3,
+              f"the tag the decision built is where the design says it is: {leaf!r}")
+
+    definition = pool_find_definition(pool, "design.Named").ok_value
+    named = VibaData(viba_ast.Tagged("$value", viba_ast.Constant("a")))
+    node = access.root(definition, named)
+    check(isinstance(node, Ok), f"a design whose member is a symbol a pattern took: {node!r}")
+    if isinstance(node, Ok):
+        leaf = access.leaf(access.get(node.ok_value, by_tag("$value")).ok_value)
+        check(isinstance(leaf, Ok) and leaf.ok_value == "a",
+              f"the symbol a pattern took is a string in the design: {leaf!r}")
+
+    definition = pool_find_definition(pool, "design.Boxed").ok_value
+    boxed = viba_ast.Tagged("$value", viba_ast.Tagged("$item", viba_ast.Constant("hi")))
+    node = access.root(definition, VibaData(boxed))
+    check(isinstance(node, Ok), f"a design whose member is the chosen file's own type: {node!r}")
+    if isinstance(node, Ok):
+        leaf = access.leaf(access.get(
+            access.get(node.ok_value, by_tag("$value")).ok_value, by_tag("$item")).ok_value)
+        check(isinstance(leaf, Ok) and leaf.ok_value == "hi",
+              f"the chosen file's $item is where the design says it is: {leaf!r}")
+
+
+if __name__ == "__main__":
+    scratch = Path(tempfile.mkdtemp(prefix="viba-pattern-"))
+    try:
+        run(scratch)
+    finally:
+        for leftover in sorted(scratch.rglob("*"), reverse=True):
+            leftover.unlink() if leftover.is_file() else leftover.rmdir()
+    sys.exit(checks.report())

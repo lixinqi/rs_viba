@@ -1,0 +1,8 @@
+__decl__ =
+    str
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import lib as lib
+__impl__ = lib << (args.env.sub_env << args.env << "lib")

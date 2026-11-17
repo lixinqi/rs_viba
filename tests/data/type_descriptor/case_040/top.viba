@@ -1,0 +1,6 @@
+Bundle0 =
+  Object
+  * $count int
+  * $label str
+
+Rule1 = $left int | $right str

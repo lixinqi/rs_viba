@@ -1,0 +1,10 @@
+__decl__ =
+    Any
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import branch
+import right_mod_direct as right
+
+__impl__ = right << (args.env.tmp_env << args.env)

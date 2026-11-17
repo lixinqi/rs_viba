@@ -1,0 +1,5 @@
+__decl__ = Any <- $env Env
+
+A = B
+B = A
+__impl__ = A

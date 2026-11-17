@@ -1,0 +1,12 @@
+import top as up
+
+Bundle0 = str * (int | nil)
+
+Rule1 =
+  Object
+  * $ghost Missing
+  * $mix list[Missing]
+
+Report2 =
+  Object
+  * $peer up.Bundle1

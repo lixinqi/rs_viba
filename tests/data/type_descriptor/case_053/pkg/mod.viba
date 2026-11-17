@@ -1,0 +1,7 @@
+import lv1.lv2.lv3.leaf
+
+Bundle0 = $only int
+
+Report1 =
+  Object
+  * $peer lv1.lv2.lv3.leaf.Report1

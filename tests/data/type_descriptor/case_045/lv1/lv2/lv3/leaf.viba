@@ -1,0 +1,19 @@
+import top
+
+Report0 =
+  Object
+  * $peer top.Report0
+
+Bundle1 =
+  Object
+  * $items list[int]
+  * $seen set[str]
+  * $table dict[str, int]
+  * $maybe (int | nil)
+
+Rule2 = int * str * bool
+
+Bundle3 =
+  Object
+  * $ghost Missing
+  * $mix list[Missing]

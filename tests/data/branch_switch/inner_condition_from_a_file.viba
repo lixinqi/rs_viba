@@ -1,0 +1,22 @@
+__decl__ =
+    Any
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import branch as branch
+import gate as gate
+import inner as inner
+
+__impl__ =
+    Oneof
+    | (
+        inner.inner_if
+        << $env args.env << $cond ((gate.gate << $env args.env << $mode true))
+        << $get_v (inner.always_nine)
+      )
+    | (
+        inner.inner_if_not
+        << $env args.env << $cond ((gate.gate << $env args.env << $mode true))
+        << $get_v (builtin.echo << $x 0)
+      )

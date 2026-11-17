@@ -1,0 +1,8 @@
+__decl__ =
+    Any
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import missing_member
+__impl__ = missing_member << (args.env.tmp_env << args.env) << 1

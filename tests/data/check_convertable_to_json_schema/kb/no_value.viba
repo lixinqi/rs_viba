@@ -1,0 +1,5 @@
+X = Any
+
+F = int <- $a int
+
+E = int | ...

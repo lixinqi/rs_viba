@@ -1,0 +1,15 @@
+import pkg.sub.deep
+
+Report0 =
+  Object
+  * $peer pkg.sub.deep.Plan0
+
+Bundle1 = int * str
+
+Report2 =
+  Object
+  * $ghost Missing
+  * $mix list[Missing]
+
+Node3[T] =
+  $v T

@@ -1,0 +1,5 @@
+import demo.is_compatable as is_compatable
+
+__decl__ = Any <- $env Env
+
+__impl__ = is_compatable[float, str].value

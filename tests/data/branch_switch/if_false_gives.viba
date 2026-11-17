@@ -1,0 +1,13 @@
+__decl__ =
+    Any
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import branch as branch
+import workshop as workshop
+
+__impl__ =
+    Oneof
+  | (workshop.if_true << $env args.env << $get_v (builtin.echo << $x 7))
+  | (workshop.if_false << $env args.env << $get_v (builtin.echo << $x 0))

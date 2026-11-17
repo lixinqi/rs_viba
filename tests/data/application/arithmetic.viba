@@ -1,0 +1,6 @@
+add =
+    int
+  <- $env Env
+  <- $a int
+  <- $b int
+  <- { add the two }

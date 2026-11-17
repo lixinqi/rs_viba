@@ -1,0 +1,8 @@
+__decl__ =
+    Any
+  <- $env Env
+  <- $a int
+
+args = __get_args__ << __decl__
+
+__impl__ = args.zzz

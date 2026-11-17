@@ -1,0 +1,4 @@
+# A file whose answer is a plain value, with no arguments of its own.
+__decl__ = int <- $env Env
+
+__impl__ = 41

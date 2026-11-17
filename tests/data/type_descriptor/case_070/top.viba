@@ -1,0 +1,8 @@
+import top as up
+
+Bundle0 =
+  Object
+  * $count int
+  * $label str
+
+Rule1 = str * (int | nil)

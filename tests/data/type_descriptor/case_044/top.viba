@@ -1,0 +1,7 @@
+import util
+
+Bundle0 =
+  Object
+  * $peer util.Rule1
+
+Report1 = $left int | $right str

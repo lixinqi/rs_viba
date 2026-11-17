@@ -1,0 +1,10 @@
+__decl__ =
+    int
+  <- $env Env
+  <- $a int
+  <- $b int
+
+args = __get_args__ << __decl__
+
+sum = int <- $env Env <- $a int <- $b int <- { add }
+__impl__ = sum << $env args.env << $a args.a << $b args.b

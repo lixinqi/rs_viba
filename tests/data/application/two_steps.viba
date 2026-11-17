@@ -1,0 +1,10 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import arithmetic as arithmetic
+
+half = arithmetic.add << $a 40
+__impl__ = half << $b 2 << args.env

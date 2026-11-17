@@ -1,0 +1,19 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+add =
+    int
+  <- $env Env
+  <- $a int
+  <- $b int
+  <- { add the two }
+tick =
+    int
+  <- $env Env
+  <- { counts as a side effect }
+
+h = add << $a (tick << args.env)
+__impl__ = h << $b 2 << args.env

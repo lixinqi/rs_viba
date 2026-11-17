@@ -1,0 +1,13 @@
+__decl__ =
+    str
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+join =
+	str
+	<- $env Env
+	<- $a str
+	<- $b str
+	<- { join two strings }
+__impl__ = join << $env args.env << $a "a" << $b "b"

@@ -1,0 +1,4 @@
+__decl__ = int <- $env Env
+
+import late_lib as lib
+__impl__ = lib

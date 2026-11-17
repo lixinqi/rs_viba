@@ -1,0 +1,11 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+leaf =
+	int
+	<- $env Env
+	<- { inline }
+__impl__ = leaf << $env args.env

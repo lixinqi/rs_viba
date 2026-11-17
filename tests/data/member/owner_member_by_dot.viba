@@ -1,0 +1,19 @@
+# The same call with the member taken by its dotted name: the value it came from
+# is given as its first argument.
+__decl__ =
+    Any
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+Box = Object * $f (int <- $box Box <- $env Env <- $x int) * $y int
+
+inc =
+    int
+  <- $box Box
+  <- $env Env
+  <- $x int
+  <- { add one }
+
+box = Object * $f inc * $y 2
+__impl__ = box.f << box << args.env << 1

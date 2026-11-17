@@ -1,0 +1,8 @@
+__decl__ = Any <- $env Env
+
+import branch
+import right_edge_in_file_pair as right
+
+A = B
+B = A
+__impl__ = A

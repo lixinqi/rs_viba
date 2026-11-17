@@ -1,0 +1,15 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+add =
+	int
+	<- $env Env
+	<- $a int
+	<- $b int
+	<- { add two integer }
+import left as l
+import right as r
+__impl__ = add << $env args.env << $a (l << (args.env.sub_env << args.env << "l")) << $b (r << (args.env.sub_env << args.env << "r"))

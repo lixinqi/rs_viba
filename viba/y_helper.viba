@@ -1,0 +1,66 @@
+# The step's helper: the step itself, this helper (the next layer), and the product of
+# this layer's arguments. The environment is a parameter, so this call runs at the storage path
+# its caller gave: a step gives one name per layer it starts
+# (`args.fib << (sub_env << args.env << "low") << $n below << $m other`), and that layer's
+# arguments arrive as the links after it, collected into one product by `$args ...`.
+#
+# The layer the step runs in is no child of the caller's layer: it is the storage path that layer
+# stands for, compressed (`compress_env_path`) into one name beside the workspace, so a
+# recursion of any depth keeps the same path length. The workspace is the same every layer
+# — `$caller_workspace_relative_path` names it from the root of the chain and is handed on
+# unchanged — while `$sub` is this call's own layer, which is what tells one layer from the
+# next. Y computes the path once (`get_relative_path`).
+#
+# `$f` is the step as a value, whatever its parameter list looks like, so this one module
+# answers every length; `apply` spreads the product, so nothing here counts the members.
+import apply
+
+__decl__ =
+    Any
+  <- $env Env
+  <- $f Any
+  <- $y_helper Any
+  <- $caller_workspace_relative_path str
+  <- $args ...
+
+args = __get_args__ << __decl__
+
+# The compaction point: the chain of environments this call is inside is the
+# interpreter's own stack, and one link per layer of the recursion is what would
+# make it grow without end. Past 32 links the calls running now are made from the
+# interpreter's work list instead, one at a time (viba/exec/viba-interpreter.md, "栈太长时：
+# 把系统栈变成工作清单"), so a `Y` recursion goes as deep as it likes. What the call
+# answers is this layer's environment, and the definitions below use that name:
+# they are computed when the piece that wants them is, so the compaction point is
+# in order before anything runs at this layer.
+env = $try_compact << args.env << 32
+
+# The workspace: the same layer for every call, taken back from its relative path. The root is
+# this chain's own root, so the path is still measured from the top even though this call
+# sits deeper.
+caller_workspace_env =
+    env.find_by_relative_path
+  << args.caller_workspace_relative_path
+  << ($get_root << env)
+
+# The layer the step runs in: the storage path of this call's own layer, compressed into a
+# sibling of the workspace. The step's own name for it (`"low"`, `"high"`) is part of that path,
+# so two branches of one step answer two different layers.
+workspace =
+    $compress_env_path
+  << caller_workspace_env
+  << env
+
+# y(f, y): with only the step and the helper it stops partially applied — the eta step. Its
+# head is the helper the caller handed over, which is this call itself; the layer the next
+# call runs in and this layer's arguments are still to come, and the step gives both. The
+# workspace is the same one every layer, so the path goes on as it came.
+recursive =
+    args.y_helper
+  << $f args.f
+  << $y_helper args.y_helper
+  << $caller_workspace_relative_path args.caller_workspace_relative_path
+
+# The step is given the next layer; `apply` goes on giving this layer's arguments, and the
+# environment reaches the step through the calls `apply` answers.
+__impl__ = apply << $env workspace << (args.f << recursive) << args.args

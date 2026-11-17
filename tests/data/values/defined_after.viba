@@ -1,0 +1,4 @@
+__decl__ = int <- $env Env
+
+__impl__ = x
+x = 7

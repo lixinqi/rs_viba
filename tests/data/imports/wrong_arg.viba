@@ -1,0 +1,4 @@
+__decl__ = int <- $env Env
+
+import plain_two as p
+__impl__ = p << 7

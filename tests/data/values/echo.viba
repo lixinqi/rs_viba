@@ -1,0 +1,12 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+echo =
+	int
+	<- $env Env
+	<- $x int
+	<- { pass it through }
+__impl__ = echo << $env args.env << $x 42

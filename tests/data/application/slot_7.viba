@@ -1,0 +1,14 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import arithmetic as arithmetic
+
+x_of =
+	int
+	<- $env Env
+	<- $p ($x int * $y int)
+	<- { the x of that point }
+__impl__ = x_of << $env args.env << $p ($x 1 * $y 2)

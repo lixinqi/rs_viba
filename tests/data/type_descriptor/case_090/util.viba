@@ -1,0 +1,20 @@
+import top as m
+
+Rule0 =
+  Object
+  * $items list[int]
+  * $seen set[str]
+  * $table dict[str, int]
+  * $maybe (int | nil)
+
+Bundle1 =
+  Object
+  * $count int
+  * $label str
+
+Report2 =
+  Object
+  * $peer m.Bundle2
+
+Bundle3[T] =
+  $v T

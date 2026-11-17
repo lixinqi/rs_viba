@@ -1,0 +1,12 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+roll =
+	int
+	<- $env Env
+	<- $n int
+	<- { roll a die: not a pure function, so its answer is snapshotted }
+__impl__ = roll << $env args.env << $n 1

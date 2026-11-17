@@ -1,0 +1,17 @@
+import top
+
+Config0 = str * (int | nil)
+
+Bundle1 =
+  Object
+  * $ghost Missing
+  * $mix list[Missing]
+
+Node2 =
+  Oneof
+  | $left int
+  | $right str
+
+Bundle3 =
+  Object
+  * $peer top.Node0

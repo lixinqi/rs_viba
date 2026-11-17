@@ -1,0 +1,7 @@
+__decl__ = Any <- $env Env
+
+import branch
+import right_nest_dropped_dropped as right
+
+x = right.y
+__impl__ = x

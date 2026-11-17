@@ -1,0 +1,20 @@
+__decl__ =
+    Any
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import branch
+import right_cond_takes_back as right
+
+x =
+    Oneof
+    | (
+        branch.echo_or_never
+        << $env args.env << $cond (right.g << $env args.env)
+        << $get_v (builtin.echo << $x 7))
+    | (
+        branch.never_or_echo
+        << $env args.env << $cond (right.g << $env args.env)
+        << $get_v (builtin.echo << $x 0))
+__impl__ = x

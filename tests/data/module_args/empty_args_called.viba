@@ -1,0 +1,6 @@
+__decl__ = int <- $env Env
+
+args = __get_args__ << __decl__
+
+import empty_args_declared
+__impl__ = empty_args_declared << (args.env.tmp_env << args.env)

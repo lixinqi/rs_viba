@@ -1,0 +1,12 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+watch =
+    int
+  <- $env Env
+  <- $x (int <- $env Env)
+  <- { hand x back }
+__impl__ = watch << $env args.env << $x (builtin.echo << $x "x")

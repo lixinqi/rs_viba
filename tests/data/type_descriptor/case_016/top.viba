@@ -1,0 +1,19 @@
+import util as lib
+
+Bundle0 =
+  Object
+  * $items list[int]
+  * $seen set[str]
+  * $table dict[str, int]
+  * $maybe (int | nil)
+
+Bundle1 =
+  Object
+  * $peer lib.Node2
+
+Bundle2 = str * (int | nil)
+
+Plan3 =
+  Object
+  * $count int
+  * $label str

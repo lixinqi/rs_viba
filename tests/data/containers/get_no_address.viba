@@ -1,0 +1,4 @@
+# The take never got an address.
+xs = ListLiteral[10]
+
+__impl__ = $get_item << $env nil << xs

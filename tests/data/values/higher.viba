@@ -1,0 +1,17 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+inc =
+	int
+	<- $env Env
+	<- $x int
+	<- { add one }
+show =
+	int
+	<- $env Env
+	<- $f (int <- $env Env <- $x int)
+	<- { hand the argument back }
+__impl__ = show << $env args.env << $f inc

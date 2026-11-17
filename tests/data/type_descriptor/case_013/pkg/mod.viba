@@ -1,0 +1,10 @@
+import util
+
+Bundle0[T] =
+  $v T
+
+Bundle1 = $only int
+
+Rule2 =
+  Object
+  * $peer util.Bundle1

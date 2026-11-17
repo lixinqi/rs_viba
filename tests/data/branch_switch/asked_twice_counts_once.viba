@@ -1,0 +1,11 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import branch as branch
+import counters as counters
+
+__impl__ =
+    counters.asked_twice << $env args.env << $get_x counters.tick

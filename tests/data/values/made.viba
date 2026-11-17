@@ -1,0 +1,11 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+make_node =
+	int
+	<- $env Env
+	<- { make a node }
+__impl__ = make_node << $env args.env

@@ -1,0 +1,2161 @@
+Created by PLY version 3.11 (http://www.dabeaz.com/ply)
+
+Unused terminals:
+
+    LBRACE
+    RBRACE
+
+Grammar
+
+Rule 0     S' -> program
+Rule 1     program -> statement_list
+Rule 2     program -> epsilon
+Rule 3     statement_list -> statement
+Rule 4     statement_list -> statement statement_list
+Rule 5     statement -> definition
+Rule 6     statement -> import_stmt
+Rule 7     statement -> pattern_stmt
+Rule 8     definition -> type_definition
+Rule 9     definition -> generic_definition
+Rule 10    partial_expr -> partial_expr APPLY_OP adt_expr
+Rule 11    partial_expr -> member_head APPLY_OP adt_expr
+Rule 12    partial_expr -> adt_expr
+Rule 13    member_head -> TAGGED_CLASS_NAME
+Rule 14    type_definition -> CLASS_NAME ASSIGN partial_expr
+Rule 15    generic_definition -> CLASS_NAME LBRACKET CLASS_NAME type_param_list RBRACKET ASSIGN partial_expr
+Rule 16    import_stmt -> IMPORT class_path optional_alias
+Rule 17    class_path -> CLASS_NAME
+Rule 18    class_path -> class_path DOT CLASS_NAME
+Rule 19    pattern_stmt -> PATTERN partial_expr
+Rule 20    optional_alias -> AS CLASS_NAME
+Rule 21    optional_alias -> epsilon
+Rule 22    type_param_list -> COMMA CLASS_NAME type_param_list
+Rule 23    type_param_list -> epsilon
+Rule 24    adt_expr -> adt_expr SUM_OP product_expr
+Rule 25    adt_expr -> product_expr
+Rule 26    product_expr -> product_expr PROD_OP exponent_expr
+Rule 27    product_expr -> exponent_expr
+Rule 28    exponent_expr -> exponent_expr EXP_OP unary_expr
+Rule 29    exponent_expr -> unary_expr
+Rule 30    unary_expr -> tag_path member_expr
+Rule 31    unary_expr -> member_expr
+Rule 32    tag_path -> TAGGED_CLASS_NAME
+Rule 33    tag_path -> tag_path DOT CLASS_NAME
+Rule 34    member_expr -> member_expr DOT CLASS_NAME
+Rule 35    member_expr -> type_app_expr
+Rule 36    name_tail -> DOT CLASS_NAME name_tail
+Rule 37    name_tail -> epsilon
+Rule 38    type_app_expr -> CLASS_NAME name_tail optional_type_args
+Rule 39    type_app_expr -> primary_expr
+Rule 40    optional_type_args -> LBRACKET partial_expr adt_arg_list RBRACKET
+Rule 41    optional_type_args -> LBRACKET RBRACKET
+Rule 42    optional_type_args -> epsilon
+Rule 43    adt_arg_list -> COMMA partial_expr adt_arg_list
+Rule 44    adt_arg_list -> epsilon
+Rule 45    adt_expr_list -> partial_expr COMMA partial_expr
+Rule 46    adt_expr_list -> partial_expr COMMA adt_expr_list
+Rule 47    adt_expr_list -> <empty>
+Rule 48    primary_expr -> CLASS_NAME
+Rule 49    primary_expr -> literal
+Rule 50    primary_expr -> NIL
+Rule 51    primary_expr -> NEVER
+Rule 52    primary_expr -> ANY
+Rule 53    primary_expr -> ELLIPSIS
+Rule 54    primary_expr -> LPAREN partial_expr RPAREN
+Rule 55    primary_expr -> LPAREN adt_expr_list RPAREN
+Rule 56    primary_expr -> HINT_BLOCK
+Rule 57    literal -> FLOAT
+Rule 58    literal -> INT
+Rule 59    literal -> STRING
+Rule 60    literal -> SINGLE_STRING
+Rule 61    literal -> TRIPLE_STRING
+Rule 62    literal -> BOOLEAN
+Rule 63    epsilon -> <empty>
+
+Terminals, with rules where they appear
+
+ANY                  : 52
+APPLY_OP             : 10 11
+AS                   : 20
+ASSIGN               : 14 15
+BOOLEAN              : 62
+CLASS_NAME           : 14 15 15 17 18 20 22 33 34 36 38 48
+COMMA                : 22 43 45 46
+DOT                  : 18 33 34 36
+ELLIPSIS             : 53
+EXP_OP               : 28
+FLOAT                : 57
+HINT_BLOCK           : 56
+IMPORT               : 16
+INT                  : 58
+LBRACE               : 
+LBRACKET             : 15 40 41
+LPAREN               : 54 55
+NEVER                : 51
+NIL                  : 50
+PATTERN              : 19
+PROD_OP              : 26
+RBRACE               : 
+RBRACKET             : 15 40 41
+RPAREN               : 54 55
+SINGLE_STRING        : 60
+STRING               : 59
+SUM_OP               : 24
+TAGGED_CLASS_NAME    : 13 32
+TRIPLE_STRING        : 61
+error                : 
+
+Nonterminals, with rules where they appear
+
+adt_arg_list         : 40 43
+adt_expr             : 10 11 12 24
+adt_expr_list        : 46 55
+class_path           : 16 18
+definition           : 5
+epsilon              : 2 21 23 37 42 44
+exponent_expr        : 26 27 28
+generic_definition   : 9
+import_stmt          : 6
+literal              : 49
+member_expr          : 30 31 34
+member_head          : 11
+name_tail            : 36 38
+optional_alias       : 16
+optional_type_args   : 38
+partial_expr         : 10 14 15 19 40 43 45 45 46 54
+pattern_stmt         : 7
+primary_expr         : 39
+product_expr         : 24 25 26
+program              : 0
+statement            : 3 4
+statement_list       : 1 4
+tag_path             : 30 33
+type_app_expr        : 35
+type_definition      : 8
+type_param_list      : 15 22
+unary_expr           : 28 29
+
+Parsing method: LALR
+
+state 0
+
+    (0) S' -> . program
+    (1) program -> . statement_list
+    (2) program -> . epsilon
+    (3) statement_list -> . statement
+    (4) statement_list -> . statement statement_list
+    (63) epsilon -> .
+    (5) statement -> . definition
+    (6) statement -> . import_stmt
+    (7) statement -> . pattern_stmt
+    (8) definition -> . type_definition
+    (9) definition -> . generic_definition
+    (16) import_stmt -> . IMPORT class_path optional_alias
+    (19) pattern_stmt -> . PATTERN partial_expr
+    (14) type_definition -> . CLASS_NAME ASSIGN partial_expr
+    (15) generic_definition -> . CLASS_NAME LBRACKET CLASS_NAME type_param_list RBRACKET ASSIGN partial_expr
+
+    $end            reduce using rule 63 (epsilon -> .)
+    IMPORT          shift and go to state 10
+    PATTERN         shift and go to state 11
+    CLASS_NAME      shift and go to state 12
+
+    program                        shift and go to state 1
+    statement_list                 shift and go to state 2
+    epsilon                        shift and go to state 3
+    statement                      shift and go to state 4
+    definition                     shift and go to state 5
+    import_stmt                    shift and go to state 6
+    pattern_stmt                   shift and go to state 7
+    type_definition                shift and go to state 8
+    generic_definition             shift and go to state 9
+
+state 1
+
+    (0) S' -> program .
+
+
+
+state 2
+
+    (1) program -> statement_list .
+
+    $end            reduce using rule 1 (program -> statement_list .)
+
+
+state 3
+
+    (2) program -> epsilon .
+
+    $end            reduce using rule 2 (program -> epsilon .)
+
+
+state 4
+
+    (3) statement_list -> statement .
+    (4) statement_list -> statement . statement_list
+    (3) statement_list -> . statement
+    (4) statement_list -> . statement statement_list
+    (5) statement -> . definition
+    (6) statement -> . import_stmt
+    (7) statement -> . pattern_stmt
+    (8) definition -> . type_definition
+    (9) definition -> . generic_definition
+    (16) import_stmt -> . IMPORT class_path optional_alias
+    (19) pattern_stmt -> . PATTERN partial_expr
+    (14) type_definition -> . CLASS_NAME ASSIGN partial_expr
+    (15) generic_definition -> . CLASS_NAME LBRACKET CLASS_NAME type_param_list RBRACKET ASSIGN partial_expr
+
+    $end            reduce using rule 3 (statement_list -> statement .)
+    IMPORT          shift and go to state 10
+    PATTERN         shift and go to state 11
+    CLASS_NAME      shift and go to state 12
+
+    statement                      shift and go to state 4
+    statement_list                 shift and go to state 13
+    definition                     shift and go to state 5
+    import_stmt                    shift and go to state 6
+    pattern_stmt                   shift and go to state 7
+    type_definition                shift and go to state 8
+    generic_definition             shift and go to state 9
+
+state 5
+
+    (5) statement -> definition .
+
+    IMPORT          reduce using rule 5 (statement -> definition .)
+    PATTERN         reduce using rule 5 (statement -> definition .)
+    CLASS_NAME      reduce using rule 5 (statement -> definition .)
+    $end            reduce using rule 5 (statement -> definition .)
+
+
+state 6
+
+    (6) statement -> import_stmt .
+
+    IMPORT          reduce using rule 6 (statement -> import_stmt .)
+    PATTERN         reduce using rule 6 (statement -> import_stmt .)
+    CLASS_NAME      reduce using rule 6 (statement -> import_stmt .)
+    $end            reduce using rule 6 (statement -> import_stmt .)
+
+
+state 7
+
+    (7) statement -> pattern_stmt .
+
+    IMPORT          reduce using rule 7 (statement -> pattern_stmt .)
+    PATTERN         reduce using rule 7 (statement -> pattern_stmt .)
+    CLASS_NAME      reduce using rule 7 (statement -> pattern_stmt .)
+    $end            reduce using rule 7 (statement -> pattern_stmt .)
+
+
+state 8
+
+    (8) definition -> type_definition .
+
+    IMPORT          reduce using rule 8 (definition -> type_definition .)
+    PATTERN         reduce using rule 8 (definition -> type_definition .)
+    CLASS_NAME      reduce using rule 8 (definition -> type_definition .)
+    $end            reduce using rule 8 (definition -> type_definition .)
+
+
+state 9
+
+    (9) definition -> generic_definition .
+
+    IMPORT          reduce using rule 9 (definition -> generic_definition .)
+    PATTERN         reduce using rule 9 (definition -> generic_definition .)
+    CLASS_NAME      reduce using rule 9 (definition -> generic_definition .)
+    $end            reduce using rule 9 (definition -> generic_definition .)
+
+
+state 10
+
+    (16) import_stmt -> IMPORT . class_path optional_alias
+    (17) class_path -> . CLASS_NAME
+    (18) class_path -> . class_path DOT CLASS_NAME
+
+    CLASS_NAME      shift and go to state 15
+
+    class_path                     shift and go to state 14
+
+state 11
+
+    (19) pattern_stmt -> PATTERN . partial_expr
+    (10) partial_expr -> . partial_expr APPLY_OP adt_expr
+    (11) partial_expr -> . member_head APPLY_OP adt_expr
+    (12) partial_expr -> . adt_expr
+    (13) member_head -> . TAGGED_CLASS_NAME
+    (24) adt_expr -> . adt_expr SUM_OP product_expr
+    (25) adt_expr -> . product_expr
+    (26) product_expr -> . product_expr PROD_OP exponent_expr
+    (27) product_expr -> . exponent_expr
+    (28) exponent_expr -> . exponent_expr EXP_OP unary_expr
+    (29) exponent_expr -> . unary_expr
+    (30) unary_expr -> . tag_path member_expr
+    (31) unary_expr -> . member_expr
+    (32) tag_path -> . TAGGED_CLASS_NAME
+    (33) tag_path -> . tag_path DOT CLASS_NAME
+    (34) member_expr -> . member_expr DOT CLASS_NAME
+    (35) member_expr -> . type_app_expr
+    (38) type_app_expr -> . CLASS_NAME name_tail optional_type_args
+    (39) type_app_expr -> . primary_expr
+    (48) primary_expr -> . CLASS_NAME
+    (49) primary_expr -> . literal
+    (50) primary_expr -> . NIL
+    (51) primary_expr -> . NEVER
+    (52) primary_expr -> . ANY
+    (53) primary_expr -> . ELLIPSIS
+    (54) primary_expr -> . LPAREN partial_expr RPAREN
+    (55) primary_expr -> . LPAREN adt_expr_list RPAREN
+    (56) primary_expr -> . HINT_BLOCK
+    (57) literal -> . FLOAT
+    (58) literal -> . INT
+    (59) literal -> . STRING
+    (60) literal -> . SINGLE_STRING
+    (61) literal -> . TRIPLE_STRING
+    (62) literal -> . BOOLEAN
+
+    TAGGED_CLASS_NAME shift and go to state 19
+    CLASS_NAME      shift and go to state 25
+    NIL             shift and go to state 29
+    NEVER           shift and go to state 30
+    ANY             shift and go to state 31
+    ELLIPSIS        shift and go to state 32
+    LPAREN          shift and go to state 33
+    HINT_BLOCK      shift and go to state 34
+    FLOAT           shift and go to state 35
+    INT             shift and go to state 36
+    STRING          shift and go to state 37
+    SINGLE_STRING   shift and go to state 38
+    TRIPLE_STRING   shift and go to state 39
+    BOOLEAN         shift and go to state 40
+
+    partial_expr                   shift and go to state 16
+    adt_expr                       shift and go to state 17
+    member_head                    shift and go to state 18
+    product_expr                   shift and go to state 20
+    exponent_expr                  shift and go to state 21
+    unary_expr                     shift and go to state 22
+    tag_path                       shift and go to state 23
+    member_expr                    shift and go to state 24
+    type_app_expr                  shift and go to state 26
+    primary_expr                   shift and go to state 27
+    literal                        shift and go to state 28
+
+state 12
+
+    (14) type_definition -> CLASS_NAME . ASSIGN partial_expr
+    (15) generic_definition -> CLASS_NAME . LBRACKET CLASS_NAME type_param_list RBRACKET ASSIGN partial_expr
+
+    ASSIGN          shift and go to state 41
+    LBRACKET        shift and go to state 42
+
+
+state 13
+
+    (4) statement_list -> statement statement_list .
+
+    $end            reduce using rule 4 (statement_list -> statement statement_list .)
+
+
+state 14
+
+    (16) import_stmt -> IMPORT class_path . optional_alias
+    (18) class_path -> class_path . DOT CLASS_NAME
+    (20) optional_alias -> . AS CLASS_NAME
+    (21) optional_alias -> . epsilon
+    (63) epsilon -> .
+
+    DOT             shift and go to state 44
+    AS              shift and go to state 45
+    IMPORT          reduce using rule 63 (epsilon -> .)
+    PATTERN         reduce using rule 63 (epsilon -> .)
+    CLASS_NAME      reduce using rule 63 (epsilon -> .)
+    $end            reduce using rule 63 (epsilon -> .)
+
+    optional_alias                 shift and go to state 43
+    epsilon                        shift and go to state 46
+
+state 15
+
+    (17) class_path -> CLASS_NAME .
+
+    DOT             reduce using rule 17 (class_path -> CLASS_NAME .)
+    AS              reduce using rule 17 (class_path -> CLASS_NAME .)
+    IMPORT          reduce using rule 17 (class_path -> CLASS_NAME .)
+    PATTERN         reduce using rule 17 (class_path -> CLASS_NAME .)
+    CLASS_NAME      reduce using rule 17 (class_path -> CLASS_NAME .)
+    $end            reduce using rule 17 (class_path -> CLASS_NAME .)
+
+
+state 16
+
+    (19) pattern_stmt -> PATTERN partial_expr .
+    (10) partial_expr -> partial_expr . APPLY_OP adt_expr
+
+    IMPORT          reduce using rule 19 (pattern_stmt -> PATTERN partial_expr .)
+    PATTERN         reduce using rule 19 (pattern_stmt -> PATTERN partial_expr .)
+    CLASS_NAME      reduce using rule 19 (pattern_stmt -> PATTERN partial_expr .)
+    $end            reduce using rule 19 (pattern_stmt -> PATTERN partial_expr .)
+    APPLY_OP        shift and go to state 47
+
+
+state 17
+
+    (12) partial_expr -> adt_expr .
+    (24) adt_expr -> adt_expr . SUM_OP product_expr
+
+    APPLY_OP        reduce using rule 12 (partial_expr -> adt_expr .)
+    IMPORT          reduce using rule 12 (partial_expr -> adt_expr .)
+    PATTERN         reduce using rule 12 (partial_expr -> adt_expr .)
+    CLASS_NAME      reduce using rule 12 (partial_expr -> adt_expr .)
+    $end            reduce using rule 12 (partial_expr -> adt_expr .)
+    RPAREN          reduce using rule 12 (partial_expr -> adt_expr .)
+    COMMA           reduce using rule 12 (partial_expr -> adt_expr .)
+    RBRACKET        reduce using rule 12 (partial_expr -> adt_expr .)
+    SUM_OP          shift and go to state 48
+
+
+state 18
+
+    (11) partial_expr -> member_head . APPLY_OP adt_expr
+
+    APPLY_OP        shift and go to state 49
+
+
+state 19
+
+    (13) member_head -> TAGGED_CLASS_NAME .
+    (32) tag_path -> TAGGED_CLASS_NAME .
+
+    APPLY_OP        reduce using rule 13 (member_head -> TAGGED_CLASS_NAME .)
+    DOT             reduce using rule 32 (tag_path -> TAGGED_CLASS_NAME .)
+    CLASS_NAME      reduce using rule 32 (tag_path -> TAGGED_CLASS_NAME .)
+    NIL             reduce using rule 32 (tag_path -> TAGGED_CLASS_NAME .)
+    NEVER           reduce using rule 32 (tag_path -> TAGGED_CLASS_NAME .)
+    ANY             reduce using rule 32 (tag_path -> TAGGED_CLASS_NAME .)
+    ELLIPSIS        reduce using rule 32 (tag_path -> TAGGED_CLASS_NAME .)
+    LPAREN          reduce using rule 32 (tag_path -> TAGGED_CLASS_NAME .)
+    HINT_BLOCK      reduce using rule 32 (tag_path -> TAGGED_CLASS_NAME .)
+    FLOAT           reduce using rule 32 (tag_path -> TAGGED_CLASS_NAME .)
+    INT             reduce using rule 32 (tag_path -> TAGGED_CLASS_NAME .)
+    STRING          reduce using rule 32 (tag_path -> TAGGED_CLASS_NAME .)
+    SINGLE_STRING   reduce using rule 32 (tag_path -> TAGGED_CLASS_NAME .)
+    TRIPLE_STRING   reduce using rule 32 (tag_path -> TAGGED_CLASS_NAME .)
+    BOOLEAN         reduce using rule 32 (tag_path -> TAGGED_CLASS_NAME .)
+
+
+state 20
+
+    (25) adt_expr -> product_expr .
+    (26) product_expr -> product_expr . PROD_OP exponent_expr
+
+    SUM_OP          reduce using rule 25 (adt_expr -> product_expr .)
+    APPLY_OP        reduce using rule 25 (adt_expr -> product_expr .)
+    IMPORT          reduce using rule 25 (adt_expr -> product_expr .)
+    PATTERN         reduce using rule 25 (adt_expr -> product_expr .)
+    CLASS_NAME      reduce using rule 25 (adt_expr -> product_expr .)
+    $end            reduce using rule 25 (adt_expr -> product_expr .)
+    RPAREN          reduce using rule 25 (adt_expr -> product_expr .)
+    COMMA           reduce using rule 25 (adt_expr -> product_expr .)
+    RBRACKET        reduce using rule 25 (adt_expr -> product_expr .)
+    PROD_OP         shift and go to state 50
+
+
+state 21
+
+    (27) product_expr -> exponent_expr .
+    (28) exponent_expr -> exponent_expr . EXP_OP unary_expr
+
+    PROD_OP         reduce using rule 27 (product_expr -> exponent_expr .)
+    SUM_OP          reduce using rule 27 (product_expr -> exponent_expr .)
+    APPLY_OP        reduce using rule 27 (product_expr -> exponent_expr .)
+    IMPORT          reduce using rule 27 (product_expr -> exponent_expr .)
+    PATTERN         reduce using rule 27 (product_expr -> exponent_expr .)
+    CLASS_NAME      reduce using rule 27 (product_expr -> exponent_expr .)
+    $end            reduce using rule 27 (product_expr -> exponent_expr .)
+    RPAREN          reduce using rule 27 (product_expr -> exponent_expr .)
+    COMMA           reduce using rule 27 (product_expr -> exponent_expr .)
+    RBRACKET        reduce using rule 27 (product_expr -> exponent_expr .)
+    EXP_OP          shift and go to state 51
+
+
+state 22
+
+    (29) exponent_expr -> unary_expr .
+
+    EXP_OP          reduce using rule 29 (exponent_expr -> unary_expr .)
+    PROD_OP         reduce using rule 29 (exponent_expr -> unary_expr .)
+    SUM_OP          reduce using rule 29 (exponent_expr -> unary_expr .)
+    APPLY_OP        reduce using rule 29 (exponent_expr -> unary_expr .)
+    IMPORT          reduce using rule 29 (exponent_expr -> unary_expr .)
+    PATTERN         reduce using rule 29 (exponent_expr -> unary_expr .)
+    CLASS_NAME      reduce using rule 29 (exponent_expr -> unary_expr .)
+    $end            reduce using rule 29 (exponent_expr -> unary_expr .)
+    RPAREN          reduce using rule 29 (exponent_expr -> unary_expr .)
+    COMMA           reduce using rule 29 (exponent_expr -> unary_expr .)
+    RBRACKET        reduce using rule 29 (exponent_expr -> unary_expr .)
+
+
+state 23
+
+    (30) unary_expr -> tag_path . member_expr
+    (33) tag_path -> tag_path . DOT CLASS_NAME
+    (34) member_expr -> . member_expr DOT CLASS_NAME
+    (35) member_expr -> . type_app_expr
+    (38) type_app_expr -> . CLASS_NAME name_tail optional_type_args
+    (39) type_app_expr -> . primary_expr
+    (48) primary_expr -> . CLASS_NAME
+    (49) primary_expr -> . literal
+    (50) primary_expr -> . NIL
+    (51) primary_expr -> . NEVER
+    (52) primary_expr -> . ANY
+    (53) primary_expr -> . ELLIPSIS
+    (54) primary_expr -> . LPAREN partial_expr RPAREN
+    (55) primary_expr -> . LPAREN adt_expr_list RPAREN
+    (56) primary_expr -> . HINT_BLOCK
+    (57) literal -> . FLOAT
+    (58) literal -> . INT
+    (59) literal -> . STRING
+    (60) literal -> . SINGLE_STRING
+    (61) literal -> . TRIPLE_STRING
+    (62) literal -> . BOOLEAN
+
+    DOT             shift and go to state 53
+    CLASS_NAME      shift and go to state 25
+    NIL             shift and go to state 29
+    NEVER           shift and go to state 30
+    ANY             shift and go to state 31
+    ELLIPSIS        shift and go to state 32
+    LPAREN          shift and go to state 33
+    HINT_BLOCK      shift and go to state 34
+    FLOAT           shift and go to state 35
+    INT             shift and go to state 36
+    STRING          shift and go to state 37
+    SINGLE_STRING   shift and go to state 38
+    TRIPLE_STRING   shift and go to state 39
+    BOOLEAN         shift and go to state 40
+
+    member_expr                    shift and go to state 52
+    type_app_expr                  shift and go to state 26
+    primary_expr                   shift and go to state 27
+    literal                        shift and go to state 28
+
+state 24
+
+    (31) unary_expr -> member_expr .
+    (34) member_expr -> member_expr . DOT CLASS_NAME
+
+    EXP_OP          reduce using rule 31 (unary_expr -> member_expr .)
+    PROD_OP         reduce using rule 31 (unary_expr -> member_expr .)
+    SUM_OP          reduce using rule 31 (unary_expr -> member_expr .)
+    APPLY_OP        reduce using rule 31 (unary_expr -> member_expr .)
+    IMPORT          reduce using rule 31 (unary_expr -> member_expr .)
+    PATTERN         reduce using rule 31 (unary_expr -> member_expr .)
+    CLASS_NAME      reduce using rule 31 (unary_expr -> member_expr .)
+    $end            reduce using rule 31 (unary_expr -> member_expr .)
+    RPAREN          reduce using rule 31 (unary_expr -> member_expr .)
+    COMMA           reduce using rule 31 (unary_expr -> member_expr .)
+    RBRACKET        reduce using rule 31 (unary_expr -> member_expr .)
+    DOT             shift and go to state 54
+
+
+state 25
+
+    (38) type_app_expr -> CLASS_NAME . name_tail optional_type_args
+    (48) primary_expr -> CLASS_NAME .
+    (36) name_tail -> . DOT CLASS_NAME name_tail
+    (37) name_tail -> . epsilon
+    (63) epsilon -> .
+
+  ! shift/reduce conflict for DOT resolved as shift
+  ! shift/reduce conflict for DOT resolved as shift
+  ! reduce/reduce conflict for EXP_OP resolved using rule 48 (primary_expr -> CLASS_NAME .)
+  ! reduce/reduce conflict for PROD_OP resolved using rule 48 (primary_expr -> CLASS_NAME .)
+  ! reduce/reduce conflict for SUM_OP resolved using rule 48 (primary_expr -> CLASS_NAME .)
+  ! reduce/reduce conflict for APPLY_OP resolved using rule 48 (primary_expr -> CLASS_NAME .)
+  ! reduce/reduce conflict for IMPORT resolved using rule 48 (primary_expr -> CLASS_NAME .)
+  ! reduce/reduce conflict for PATTERN resolved using rule 48 (primary_expr -> CLASS_NAME .)
+  ! reduce/reduce conflict for CLASS_NAME resolved using rule 48 (primary_expr -> CLASS_NAME .)
+  ! reduce/reduce conflict for $end resolved using rule 48 (primary_expr -> CLASS_NAME .)
+  ! reduce/reduce conflict for RPAREN resolved using rule 48 (primary_expr -> CLASS_NAME .)
+  ! reduce/reduce conflict for COMMA resolved using rule 48 (primary_expr -> CLASS_NAME .)
+  ! reduce/reduce conflict for RBRACKET resolved using rule 48 (primary_expr -> CLASS_NAME .)
+    EXP_OP          reduce using rule 48 (primary_expr -> CLASS_NAME .)
+    PROD_OP         reduce using rule 48 (primary_expr -> CLASS_NAME .)
+    SUM_OP          reduce using rule 48 (primary_expr -> CLASS_NAME .)
+    APPLY_OP        reduce using rule 48 (primary_expr -> CLASS_NAME .)
+    IMPORT          reduce using rule 48 (primary_expr -> CLASS_NAME .)
+    PATTERN         reduce using rule 48 (primary_expr -> CLASS_NAME .)
+    CLASS_NAME      reduce using rule 48 (primary_expr -> CLASS_NAME .)
+    $end            reduce using rule 48 (primary_expr -> CLASS_NAME .)
+    RPAREN          reduce using rule 48 (primary_expr -> CLASS_NAME .)
+    COMMA           reduce using rule 48 (primary_expr -> CLASS_NAME .)
+    RBRACKET        reduce using rule 48 (primary_expr -> CLASS_NAME .)
+    DOT             shift and go to state 56
+    LBRACKET        reduce using rule 63 (epsilon -> .)
+
+  ! DOT             [ reduce using rule 48 (primary_expr -> CLASS_NAME .) ]
+  ! DOT             [ reduce using rule 63 (epsilon -> .) ]
+  ! EXP_OP          [ reduce using rule 63 (epsilon -> .) ]
+  ! PROD_OP         [ reduce using rule 63 (epsilon -> .) ]
+  ! SUM_OP          [ reduce using rule 63 (epsilon -> .) ]
+  ! APPLY_OP        [ reduce using rule 63 (epsilon -> .) ]
+  ! IMPORT          [ reduce using rule 63 (epsilon -> .) ]
+  ! PATTERN         [ reduce using rule 63 (epsilon -> .) ]
+  ! CLASS_NAME      [ reduce using rule 63 (epsilon -> .) ]
+  ! $end            [ reduce using rule 63 (epsilon -> .) ]
+  ! RPAREN          [ reduce using rule 63 (epsilon -> .) ]
+  ! COMMA           [ reduce using rule 63 (epsilon -> .) ]
+  ! RBRACKET        [ reduce using rule 63 (epsilon -> .) ]
+
+    name_tail                      shift and go to state 55
+    epsilon                        shift and go to state 57
+
+state 26
+
+    (35) member_expr -> type_app_expr .
+
+    DOT             reduce using rule 35 (member_expr -> type_app_expr .)
+    EXP_OP          reduce using rule 35 (member_expr -> type_app_expr .)
+    PROD_OP         reduce using rule 35 (member_expr -> type_app_expr .)
+    SUM_OP          reduce using rule 35 (member_expr -> type_app_expr .)
+    APPLY_OP        reduce using rule 35 (member_expr -> type_app_expr .)
+    IMPORT          reduce using rule 35 (member_expr -> type_app_expr .)
+    PATTERN         reduce using rule 35 (member_expr -> type_app_expr .)
+    CLASS_NAME      reduce using rule 35 (member_expr -> type_app_expr .)
+    $end            reduce using rule 35 (member_expr -> type_app_expr .)
+    RPAREN          reduce using rule 35 (member_expr -> type_app_expr .)
+    COMMA           reduce using rule 35 (member_expr -> type_app_expr .)
+    RBRACKET        reduce using rule 35 (member_expr -> type_app_expr .)
+
+
+state 27
+
+    (39) type_app_expr -> primary_expr .
+
+    DOT             reduce using rule 39 (type_app_expr -> primary_expr .)
+    EXP_OP          reduce using rule 39 (type_app_expr -> primary_expr .)
+    PROD_OP         reduce using rule 39 (type_app_expr -> primary_expr .)
+    SUM_OP          reduce using rule 39 (type_app_expr -> primary_expr .)
+    APPLY_OP        reduce using rule 39 (type_app_expr -> primary_expr .)
+    IMPORT          reduce using rule 39 (type_app_expr -> primary_expr .)
+    PATTERN         reduce using rule 39 (type_app_expr -> primary_expr .)
+    CLASS_NAME      reduce using rule 39 (type_app_expr -> primary_expr .)
+    $end            reduce using rule 39 (type_app_expr -> primary_expr .)
+    RPAREN          reduce using rule 39 (type_app_expr -> primary_expr .)
+    COMMA           reduce using rule 39 (type_app_expr -> primary_expr .)
+    RBRACKET        reduce using rule 39 (type_app_expr -> primary_expr .)
+
+
+state 28
+
+    (49) primary_expr -> literal .
+
+    DOT             reduce using rule 49 (primary_expr -> literal .)
+    EXP_OP          reduce using rule 49 (primary_expr -> literal .)
+    PROD_OP         reduce using rule 49 (primary_expr -> literal .)
+    SUM_OP          reduce using rule 49 (primary_expr -> literal .)
+    APPLY_OP        reduce using rule 49 (primary_expr -> literal .)
+    IMPORT          reduce using rule 49 (primary_expr -> literal .)
+    PATTERN         reduce using rule 49 (primary_expr -> literal .)
+    CLASS_NAME      reduce using rule 49 (primary_expr -> literal .)
+    $end            reduce using rule 49 (primary_expr -> literal .)
+    RPAREN          reduce using rule 49 (primary_expr -> literal .)
+    COMMA           reduce using rule 49 (primary_expr -> literal .)
+    RBRACKET        reduce using rule 49 (primary_expr -> literal .)
+
+
+state 29
+
+    (50) primary_expr -> NIL .
+
+    DOT             reduce using rule 50 (primary_expr -> NIL .)
+    EXP_OP          reduce using rule 50 (primary_expr -> NIL .)
+    PROD_OP         reduce using rule 50 (primary_expr -> NIL .)
+    SUM_OP          reduce using rule 50 (primary_expr -> NIL .)
+    APPLY_OP        reduce using rule 50 (primary_expr -> NIL .)
+    IMPORT          reduce using rule 50 (primary_expr -> NIL .)
+    PATTERN         reduce using rule 50 (primary_expr -> NIL .)
+    CLASS_NAME      reduce using rule 50 (primary_expr -> NIL .)
+    $end            reduce using rule 50 (primary_expr -> NIL .)
+    RPAREN          reduce using rule 50 (primary_expr -> NIL .)
+    COMMA           reduce using rule 50 (primary_expr -> NIL .)
+    RBRACKET        reduce using rule 50 (primary_expr -> NIL .)
+
+
+state 30
+
+    (51) primary_expr -> NEVER .
+
+    DOT             reduce using rule 51 (primary_expr -> NEVER .)
+    EXP_OP          reduce using rule 51 (primary_expr -> NEVER .)
+    PROD_OP         reduce using rule 51 (primary_expr -> NEVER .)
+    SUM_OP          reduce using rule 51 (primary_expr -> NEVER .)
+    APPLY_OP        reduce using rule 51 (primary_expr -> NEVER .)
+    IMPORT          reduce using rule 51 (primary_expr -> NEVER .)
+    PATTERN         reduce using rule 51 (primary_expr -> NEVER .)
+    CLASS_NAME      reduce using rule 51 (primary_expr -> NEVER .)
+    $end            reduce using rule 51 (primary_expr -> NEVER .)
+    RPAREN          reduce using rule 51 (primary_expr -> NEVER .)
+    COMMA           reduce using rule 51 (primary_expr -> NEVER .)
+    RBRACKET        reduce using rule 51 (primary_expr -> NEVER .)
+
+
+state 31
+
+    (52) primary_expr -> ANY .
+
+    DOT             reduce using rule 52 (primary_expr -> ANY .)
+    EXP_OP          reduce using rule 52 (primary_expr -> ANY .)
+    PROD_OP         reduce using rule 52 (primary_expr -> ANY .)
+    SUM_OP          reduce using rule 52 (primary_expr -> ANY .)
+    APPLY_OP        reduce using rule 52 (primary_expr -> ANY .)
+    IMPORT          reduce using rule 52 (primary_expr -> ANY .)
+    PATTERN         reduce using rule 52 (primary_expr -> ANY .)
+    CLASS_NAME      reduce using rule 52 (primary_expr -> ANY .)
+    $end            reduce using rule 52 (primary_expr -> ANY .)
+    RPAREN          reduce using rule 52 (primary_expr -> ANY .)
+    COMMA           reduce using rule 52 (primary_expr -> ANY .)
+    RBRACKET        reduce using rule 52 (primary_expr -> ANY .)
+
+
+state 32
+
+    (53) primary_expr -> ELLIPSIS .
+
+    DOT             reduce using rule 53 (primary_expr -> ELLIPSIS .)
+    EXP_OP          reduce using rule 53 (primary_expr -> ELLIPSIS .)
+    PROD_OP         reduce using rule 53 (primary_expr -> ELLIPSIS .)
+    SUM_OP          reduce using rule 53 (primary_expr -> ELLIPSIS .)
+    APPLY_OP        reduce using rule 53 (primary_expr -> ELLIPSIS .)
+    IMPORT          reduce using rule 53 (primary_expr -> ELLIPSIS .)
+    PATTERN         reduce using rule 53 (primary_expr -> ELLIPSIS .)
+    CLASS_NAME      reduce using rule 53 (primary_expr -> ELLIPSIS .)
+    $end            reduce using rule 53 (primary_expr -> ELLIPSIS .)
+    RPAREN          reduce using rule 53 (primary_expr -> ELLIPSIS .)
+    COMMA           reduce using rule 53 (primary_expr -> ELLIPSIS .)
+    RBRACKET        reduce using rule 53 (primary_expr -> ELLIPSIS .)
+
+
+state 33
+
+    (54) primary_expr -> LPAREN . partial_expr RPAREN
+    (55) primary_expr -> LPAREN . adt_expr_list RPAREN
+    (10) partial_expr -> . partial_expr APPLY_OP adt_expr
+    (11) partial_expr -> . member_head APPLY_OP adt_expr
+    (12) partial_expr -> . adt_expr
+    (45) adt_expr_list -> . partial_expr COMMA partial_expr
+    (46) adt_expr_list -> . partial_expr COMMA adt_expr_list
+    (47) adt_expr_list -> .
+    (13) member_head -> . TAGGED_CLASS_NAME
+    (24) adt_expr -> . adt_expr SUM_OP product_expr
+    (25) adt_expr -> . product_expr
+    (26) product_expr -> . product_expr PROD_OP exponent_expr
+    (27) product_expr -> . exponent_expr
+    (28) exponent_expr -> . exponent_expr EXP_OP unary_expr
+    (29) exponent_expr -> . unary_expr
+    (30) unary_expr -> . tag_path member_expr
+    (31) unary_expr -> . member_expr
+    (32) tag_path -> . TAGGED_CLASS_NAME
+    (33) tag_path -> . tag_path DOT CLASS_NAME
+    (34) member_expr -> . member_expr DOT CLASS_NAME
+    (35) member_expr -> . type_app_expr
+    (38) type_app_expr -> . CLASS_NAME name_tail optional_type_args
+    (39) type_app_expr -> . primary_expr
+    (48) primary_expr -> . CLASS_NAME
+    (49) primary_expr -> . literal
+    (50) primary_expr -> . NIL
+    (51) primary_expr -> . NEVER
+    (52) primary_expr -> . ANY
+    (53) primary_expr -> . ELLIPSIS
+    (54) primary_expr -> . LPAREN partial_expr RPAREN
+    (55) primary_expr -> . LPAREN adt_expr_list RPAREN
+    (56) primary_expr -> . HINT_BLOCK
+    (57) literal -> . FLOAT
+    (58) literal -> . INT
+    (59) literal -> . STRING
+    (60) literal -> . SINGLE_STRING
+    (61) literal -> . TRIPLE_STRING
+    (62) literal -> . BOOLEAN
+
+    RPAREN          reduce using rule 47 (adt_expr_list -> .)
+    TAGGED_CLASS_NAME shift and go to state 19
+    CLASS_NAME      shift and go to state 25
+    NIL             shift and go to state 29
+    NEVER           shift and go to state 30
+    ANY             shift and go to state 31
+    ELLIPSIS        shift and go to state 32
+    LPAREN          shift and go to state 33
+    HINT_BLOCK      shift and go to state 34
+    FLOAT           shift and go to state 35
+    INT             shift and go to state 36
+    STRING          shift and go to state 37
+    SINGLE_STRING   shift and go to state 38
+    TRIPLE_STRING   shift and go to state 39
+    BOOLEAN         shift and go to state 40
+
+    partial_expr                   shift and go to state 58
+    adt_expr_list                  shift and go to state 59
+    adt_expr                       shift and go to state 17
+    member_head                    shift and go to state 18
+    product_expr                   shift and go to state 20
+    exponent_expr                  shift and go to state 21
+    unary_expr                     shift and go to state 22
+    tag_path                       shift and go to state 23
+    member_expr                    shift and go to state 24
+    type_app_expr                  shift and go to state 26
+    primary_expr                   shift and go to state 27
+    literal                        shift and go to state 28
+
+state 34
+
+    (56) primary_expr -> HINT_BLOCK .
+
+    DOT             reduce using rule 56 (primary_expr -> HINT_BLOCK .)
+    EXP_OP          reduce using rule 56 (primary_expr -> HINT_BLOCK .)
+    PROD_OP         reduce using rule 56 (primary_expr -> HINT_BLOCK .)
+    SUM_OP          reduce using rule 56 (primary_expr -> HINT_BLOCK .)
+    APPLY_OP        reduce using rule 56 (primary_expr -> HINT_BLOCK .)
+    IMPORT          reduce using rule 56 (primary_expr -> HINT_BLOCK .)
+    PATTERN         reduce using rule 56 (primary_expr -> HINT_BLOCK .)
+    CLASS_NAME      reduce using rule 56 (primary_expr -> HINT_BLOCK .)
+    $end            reduce using rule 56 (primary_expr -> HINT_BLOCK .)
+    RPAREN          reduce using rule 56 (primary_expr -> HINT_BLOCK .)
+    COMMA           reduce using rule 56 (primary_expr -> HINT_BLOCK .)
+    RBRACKET        reduce using rule 56 (primary_expr -> HINT_BLOCK .)
+
+
+state 35
+
+    (57) literal -> FLOAT .
+
+    DOT             reduce using rule 57 (literal -> FLOAT .)
+    EXP_OP          reduce using rule 57 (literal -> FLOAT .)
+    PROD_OP         reduce using rule 57 (literal -> FLOAT .)
+    SUM_OP          reduce using rule 57 (literal -> FLOAT .)
+    APPLY_OP        reduce using rule 57 (literal -> FLOAT .)
+    IMPORT          reduce using rule 57 (literal -> FLOAT .)
+    PATTERN         reduce using rule 57 (literal -> FLOAT .)
+    CLASS_NAME      reduce using rule 57 (literal -> FLOAT .)
+    $end            reduce using rule 57 (literal -> FLOAT .)
+    RPAREN          reduce using rule 57 (literal -> FLOAT .)
+    COMMA           reduce using rule 57 (literal -> FLOAT .)
+    RBRACKET        reduce using rule 57 (literal -> FLOAT .)
+
+
+state 36
+
+    (58) literal -> INT .
+
+    DOT             reduce using rule 58 (literal -> INT .)
+    EXP_OP          reduce using rule 58 (literal -> INT .)
+    PROD_OP         reduce using rule 58 (literal -> INT .)
+    SUM_OP          reduce using rule 58 (literal -> INT .)
+    APPLY_OP        reduce using rule 58 (literal -> INT .)
+    IMPORT          reduce using rule 58 (literal -> INT .)
+    PATTERN         reduce using rule 58 (literal -> INT .)
+    CLASS_NAME      reduce using rule 58 (literal -> INT .)
+    $end            reduce using rule 58 (literal -> INT .)
+    RPAREN          reduce using rule 58 (literal -> INT .)
+    COMMA           reduce using rule 58 (literal -> INT .)
+    RBRACKET        reduce using rule 58 (literal -> INT .)
+
+
+state 37
+
+    (59) literal -> STRING .
+
+    DOT             reduce using rule 59 (literal -> STRING .)
+    EXP_OP          reduce using rule 59 (literal -> STRING .)
+    PROD_OP         reduce using rule 59 (literal -> STRING .)
+    SUM_OP          reduce using rule 59 (literal -> STRING .)
+    APPLY_OP        reduce using rule 59 (literal -> STRING .)
+    IMPORT          reduce using rule 59 (literal -> STRING .)
+    PATTERN         reduce using rule 59 (literal -> STRING .)
+    CLASS_NAME      reduce using rule 59 (literal -> STRING .)
+    $end            reduce using rule 59 (literal -> STRING .)
+    RPAREN          reduce using rule 59 (literal -> STRING .)
+    COMMA           reduce using rule 59 (literal -> STRING .)
+    RBRACKET        reduce using rule 59 (literal -> STRING .)
+
+
+state 38
+
+    (60) literal -> SINGLE_STRING .
+
+    DOT             reduce using rule 60 (literal -> SINGLE_STRING .)
+    EXP_OP          reduce using rule 60 (literal -> SINGLE_STRING .)
+    PROD_OP         reduce using rule 60 (literal -> SINGLE_STRING .)
+    SUM_OP          reduce using rule 60 (literal -> SINGLE_STRING .)
+    APPLY_OP        reduce using rule 60 (literal -> SINGLE_STRING .)
+    IMPORT          reduce using rule 60 (literal -> SINGLE_STRING .)
+    PATTERN         reduce using rule 60 (literal -> SINGLE_STRING .)
+    CLASS_NAME      reduce using rule 60 (literal -> SINGLE_STRING .)
+    $end            reduce using rule 60 (literal -> SINGLE_STRING .)
+    RPAREN          reduce using rule 60 (literal -> SINGLE_STRING .)
+    COMMA           reduce using rule 60 (literal -> SINGLE_STRING .)
+    RBRACKET        reduce using rule 60 (literal -> SINGLE_STRING .)
+
+
+state 39
+
+    (61) literal -> TRIPLE_STRING .
+
+    DOT             reduce using rule 61 (literal -> TRIPLE_STRING .)
+    EXP_OP          reduce using rule 61 (literal -> TRIPLE_STRING .)
+    PROD_OP         reduce using rule 61 (literal -> TRIPLE_STRING .)
+    SUM_OP          reduce using rule 61 (literal -> TRIPLE_STRING .)
+    APPLY_OP        reduce using rule 61 (literal -> TRIPLE_STRING .)
+    IMPORT          reduce using rule 61 (literal -> TRIPLE_STRING .)
+    PATTERN         reduce using rule 61 (literal -> TRIPLE_STRING .)
+    CLASS_NAME      reduce using rule 61 (literal -> TRIPLE_STRING .)
+    $end            reduce using rule 61 (literal -> TRIPLE_STRING .)
+    RPAREN          reduce using rule 61 (literal -> TRIPLE_STRING .)
+    COMMA           reduce using rule 61 (literal -> TRIPLE_STRING .)
+    RBRACKET        reduce using rule 61 (literal -> TRIPLE_STRING .)
+
+
+state 40
+
+    (62) literal -> BOOLEAN .
+
+    DOT             reduce using rule 62 (literal -> BOOLEAN .)
+    EXP_OP          reduce using rule 62 (literal -> BOOLEAN .)
+    PROD_OP         reduce using rule 62 (literal -> BOOLEAN .)
+    SUM_OP          reduce using rule 62 (literal -> BOOLEAN .)
+    APPLY_OP        reduce using rule 62 (literal -> BOOLEAN .)
+    IMPORT          reduce using rule 62 (literal -> BOOLEAN .)
+    PATTERN         reduce using rule 62 (literal -> BOOLEAN .)
+    CLASS_NAME      reduce using rule 62 (literal -> BOOLEAN .)
+    $end            reduce using rule 62 (literal -> BOOLEAN .)
+    RPAREN          reduce using rule 62 (literal -> BOOLEAN .)
+    COMMA           reduce using rule 62 (literal -> BOOLEAN .)
+    RBRACKET        reduce using rule 62 (literal -> BOOLEAN .)
+
+
+state 41
+
+    (14) type_definition -> CLASS_NAME ASSIGN . partial_expr
+    (10) partial_expr -> . partial_expr APPLY_OP adt_expr
+    (11) partial_expr -> . member_head APPLY_OP adt_expr
+    (12) partial_expr -> . adt_expr
+    (13) member_head -> . TAGGED_CLASS_NAME
+    (24) adt_expr -> . adt_expr SUM_OP product_expr
+    (25) adt_expr -> . product_expr
+    (26) product_expr -> . product_expr PROD_OP exponent_expr
+    (27) product_expr -> . exponent_expr
+    (28) exponent_expr -> . exponent_expr EXP_OP unary_expr
+    (29) exponent_expr -> . unary_expr
+    (30) unary_expr -> . tag_path member_expr
+    (31) unary_expr -> . member_expr
+    (32) tag_path -> . TAGGED_CLASS_NAME
+    (33) tag_path -> . tag_path DOT CLASS_NAME
+    (34) member_expr -> . member_expr DOT CLASS_NAME
+    (35) member_expr -> . type_app_expr
+    (38) type_app_expr -> . CLASS_NAME name_tail optional_type_args
+    (39) type_app_expr -> . primary_expr
+    (48) primary_expr -> . CLASS_NAME
+    (49) primary_expr -> . literal
+    (50) primary_expr -> . NIL
+    (51) primary_expr -> . NEVER
+    (52) primary_expr -> . ANY
+    (53) primary_expr -> . ELLIPSIS
+    (54) primary_expr -> . LPAREN partial_expr RPAREN
+    (55) primary_expr -> . LPAREN adt_expr_list RPAREN
+    (56) primary_expr -> . HINT_BLOCK
+    (57) literal -> . FLOAT
+    (58) literal -> . INT
+    (59) literal -> . STRING
+    (60) literal -> . SINGLE_STRING
+    (61) literal -> . TRIPLE_STRING
+    (62) literal -> . BOOLEAN
+
+    TAGGED_CLASS_NAME shift and go to state 19
+    CLASS_NAME      shift and go to state 25
+    NIL             shift and go to state 29
+    NEVER           shift and go to state 30
+    ANY             shift and go to state 31
+    ELLIPSIS        shift and go to state 32
+    LPAREN          shift and go to state 33
+    HINT_BLOCK      shift and go to state 34
+    FLOAT           shift and go to state 35
+    INT             shift and go to state 36
+    STRING          shift and go to state 37
+    SINGLE_STRING   shift and go to state 38
+    TRIPLE_STRING   shift and go to state 39
+    BOOLEAN         shift and go to state 40
+
+    partial_expr                   shift and go to state 60
+    adt_expr                       shift and go to state 17
+    member_head                    shift and go to state 18
+    product_expr                   shift and go to state 20
+    exponent_expr                  shift and go to state 21
+    unary_expr                     shift and go to state 22
+    tag_path                       shift and go to state 23
+    member_expr                    shift and go to state 24
+    type_app_expr                  shift and go to state 26
+    primary_expr                   shift and go to state 27
+    literal                        shift and go to state 28
+
+state 42
+
+    (15) generic_definition -> CLASS_NAME LBRACKET . CLASS_NAME type_param_list RBRACKET ASSIGN partial_expr
+
+    CLASS_NAME      shift and go to state 61
+
+
+state 43
+
+    (16) import_stmt -> IMPORT class_path optional_alias .
+
+    IMPORT          reduce using rule 16 (import_stmt -> IMPORT class_path optional_alias .)
+    PATTERN         reduce using rule 16 (import_stmt -> IMPORT class_path optional_alias .)
+    CLASS_NAME      reduce using rule 16 (import_stmt -> IMPORT class_path optional_alias .)
+    $end            reduce using rule 16 (import_stmt -> IMPORT class_path optional_alias .)
+
+
+state 44
+
+    (18) class_path -> class_path DOT . CLASS_NAME
+
+    CLASS_NAME      shift and go to state 62
+
+
+state 45
+
+    (20) optional_alias -> AS . CLASS_NAME
+
+    CLASS_NAME      shift and go to state 63
+
+
+state 46
+
+    (21) optional_alias -> epsilon .
+
+    IMPORT          reduce using rule 21 (optional_alias -> epsilon .)
+    PATTERN         reduce using rule 21 (optional_alias -> epsilon .)
+    CLASS_NAME      reduce using rule 21 (optional_alias -> epsilon .)
+    $end            reduce using rule 21 (optional_alias -> epsilon .)
+
+
+state 47
+
+    (10) partial_expr -> partial_expr APPLY_OP . adt_expr
+    (24) adt_expr -> . adt_expr SUM_OP product_expr
+    (25) adt_expr -> . product_expr
+    (26) product_expr -> . product_expr PROD_OP exponent_expr
+    (27) product_expr -> . exponent_expr
+    (28) exponent_expr -> . exponent_expr EXP_OP unary_expr
+    (29) exponent_expr -> . unary_expr
+    (30) unary_expr -> . tag_path member_expr
+    (31) unary_expr -> . member_expr
+    (32) tag_path -> . TAGGED_CLASS_NAME
+    (33) tag_path -> . tag_path DOT CLASS_NAME
+    (34) member_expr -> . member_expr DOT CLASS_NAME
+    (35) member_expr -> . type_app_expr
+    (38) type_app_expr -> . CLASS_NAME name_tail optional_type_args
+    (39) type_app_expr -> . primary_expr
+    (48) primary_expr -> . CLASS_NAME
+    (49) primary_expr -> . literal
+    (50) primary_expr -> . NIL
+    (51) primary_expr -> . NEVER
+    (52) primary_expr -> . ANY
+    (53) primary_expr -> . ELLIPSIS
+    (54) primary_expr -> . LPAREN partial_expr RPAREN
+    (55) primary_expr -> . LPAREN adt_expr_list RPAREN
+    (56) primary_expr -> . HINT_BLOCK
+    (57) literal -> . FLOAT
+    (58) literal -> . INT
+    (59) literal -> . STRING
+    (60) literal -> . SINGLE_STRING
+    (61) literal -> . TRIPLE_STRING
+    (62) literal -> . BOOLEAN
+
+    TAGGED_CLASS_NAME shift and go to state 65
+    CLASS_NAME      shift and go to state 25
+    NIL             shift and go to state 29
+    NEVER           shift and go to state 30
+    ANY             shift and go to state 31
+    ELLIPSIS        shift and go to state 32
+    LPAREN          shift and go to state 33
+    HINT_BLOCK      shift and go to state 34
+    FLOAT           shift and go to state 35
+    INT             shift and go to state 36
+    STRING          shift and go to state 37
+    SINGLE_STRING   shift and go to state 38
+    TRIPLE_STRING   shift and go to state 39
+    BOOLEAN         shift and go to state 40
+
+    adt_expr                       shift and go to state 64
+    product_expr                   shift and go to state 20
+    exponent_expr                  shift and go to state 21
+    unary_expr                     shift and go to state 22
+    tag_path                       shift and go to state 23
+    member_expr                    shift and go to state 24
+    type_app_expr                  shift and go to state 26
+    primary_expr                   shift and go to state 27
+    literal                        shift and go to state 28
+
+state 48
+
+    (24) adt_expr -> adt_expr SUM_OP . product_expr
+    (26) product_expr -> . product_expr PROD_OP exponent_expr
+    (27) product_expr -> . exponent_expr
+    (28) exponent_expr -> . exponent_expr EXP_OP unary_expr
+    (29) exponent_expr -> . unary_expr
+    (30) unary_expr -> . tag_path member_expr
+    (31) unary_expr -> . member_expr
+    (32) tag_path -> . TAGGED_CLASS_NAME
+    (33) tag_path -> . tag_path DOT CLASS_NAME
+    (34) member_expr -> . member_expr DOT CLASS_NAME
+    (35) member_expr -> . type_app_expr
+    (38) type_app_expr -> . CLASS_NAME name_tail optional_type_args
+    (39) type_app_expr -> . primary_expr
+    (48) primary_expr -> . CLASS_NAME
+    (49) primary_expr -> . literal
+    (50) primary_expr -> . NIL
+    (51) primary_expr -> . NEVER
+    (52) primary_expr -> . ANY
+    (53) primary_expr -> . ELLIPSIS
+    (54) primary_expr -> . LPAREN partial_expr RPAREN
+    (55) primary_expr -> . LPAREN adt_expr_list RPAREN
+    (56) primary_expr -> . HINT_BLOCK
+    (57) literal -> . FLOAT
+    (58) literal -> . INT
+    (59) literal -> . STRING
+    (60) literal -> . SINGLE_STRING
+    (61) literal -> . TRIPLE_STRING
+    (62) literal -> . BOOLEAN
+
+    TAGGED_CLASS_NAME shift and go to state 65
+    CLASS_NAME      shift and go to state 25
+    NIL             shift and go to state 29
+    NEVER           shift and go to state 30
+    ANY             shift and go to state 31
+    ELLIPSIS        shift and go to state 32
+    LPAREN          shift and go to state 33
+    HINT_BLOCK      shift and go to state 34
+    FLOAT           shift and go to state 35
+    INT             shift and go to state 36
+    STRING          shift and go to state 37
+    SINGLE_STRING   shift and go to state 38
+    TRIPLE_STRING   shift and go to state 39
+    BOOLEAN         shift and go to state 40
+
+    product_expr                   shift and go to state 66
+    exponent_expr                  shift and go to state 21
+    unary_expr                     shift and go to state 22
+    tag_path                       shift and go to state 23
+    member_expr                    shift and go to state 24
+    type_app_expr                  shift and go to state 26
+    primary_expr                   shift and go to state 27
+    literal                        shift and go to state 28
+
+state 49
+
+    (11) partial_expr -> member_head APPLY_OP . adt_expr
+    (24) adt_expr -> . adt_expr SUM_OP product_expr
+    (25) adt_expr -> . product_expr
+    (26) product_expr -> . product_expr PROD_OP exponent_expr
+    (27) product_expr -> . exponent_expr
+    (28) exponent_expr -> . exponent_expr EXP_OP unary_expr
+    (29) exponent_expr -> . unary_expr
+    (30) unary_expr -> . tag_path member_expr
+    (31) unary_expr -> . member_expr
+    (32) tag_path -> . TAGGED_CLASS_NAME
+    (33) tag_path -> . tag_path DOT CLASS_NAME
+    (34) member_expr -> . member_expr DOT CLASS_NAME
+    (35) member_expr -> . type_app_expr
+    (38) type_app_expr -> . CLASS_NAME name_tail optional_type_args
+    (39) type_app_expr -> . primary_expr
+    (48) primary_expr -> . CLASS_NAME
+    (49) primary_expr -> . literal
+    (50) primary_expr -> . NIL
+    (51) primary_expr -> . NEVER
+    (52) primary_expr -> . ANY
+    (53) primary_expr -> . ELLIPSIS
+    (54) primary_expr -> . LPAREN partial_expr RPAREN
+    (55) primary_expr -> . LPAREN adt_expr_list RPAREN
+    (56) primary_expr -> . HINT_BLOCK
+    (57) literal -> . FLOAT
+    (58) literal -> . INT
+    (59) literal -> . STRING
+    (60) literal -> . SINGLE_STRING
+    (61) literal -> . TRIPLE_STRING
+    (62) literal -> . BOOLEAN
+
+    TAGGED_CLASS_NAME shift and go to state 65
+    CLASS_NAME      shift and go to state 25
+    NIL             shift and go to state 29
+    NEVER           shift and go to state 30
+    ANY             shift and go to state 31
+    ELLIPSIS        shift and go to state 32
+    LPAREN          shift and go to state 33
+    HINT_BLOCK      shift and go to state 34
+    FLOAT           shift and go to state 35
+    INT             shift and go to state 36
+    STRING          shift and go to state 37
+    SINGLE_STRING   shift and go to state 38
+    TRIPLE_STRING   shift and go to state 39
+    BOOLEAN         shift and go to state 40
+
+    adt_expr                       shift and go to state 67
+    product_expr                   shift and go to state 20
+    exponent_expr                  shift and go to state 21
+    unary_expr                     shift and go to state 22
+    tag_path                       shift and go to state 23
+    member_expr                    shift and go to state 24
+    type_app_expr                  shift and go to state 26
+    primary_expr                   shift and go to state 27
+    literal                        shift and go to state 28
+
+state 50
+
+    (26) product_expr -> product_expr PROD_OP . exponent_expr
+    (28) exponent_expr -> . exponent_expr EXP_OP unary_expr
+    (29) exponent_expr -> . unary_expr
+    (30) unary_expr -> . tag_path member_expr
+    (31) unary_expr -> . member_expr
+    (32) tag_path -> . TAGGED_CLASS_NAME
+    (33) tag_path -> . tag_path DOT CLASS_NAME
+    (34) member_expr -> . member_expr DOT CLASS_NAME
+    (35) member_expr -> . type_app_expr
+    (38) type_app_expr -> . CLASS_NAME name_tail optional_type_args
+    (39) type_app_expr -> . primary_expr
+    (48) primary_expr -> . CLASS_NAME
+    (49) primary_expr -> . literal
+    (50) primary_expr -> . NIL
+    (51) primary_expr -> . NEVER
+    (52) primary_expr -> . ANY
+    (53) primary_expr -> . ELLIPSIS
+    (54) primary_expr -> . LPAREN partial_expr RPAREN
+    (55) primary_expr -> . LPAREN adt_expr_list RPAREN
+    (56) primary_expr -> . HINT_BLOCK
+    (57) literal -> . FLOAT
+    (58) literal -> . INT
+    (59) literal -> . STRING
+    (60) literal -> . SINGLE_STRING
+    (61) literal -> . TRIPLE_STRING
+    (62) literal -> . BOOLEAN
+
+    TAGGED_CLASS_NAME shift and go to state 65
+    CLASS_NAME      shift and go to state 25
+    NIL             shift and go to state 29
+    NEVER           shift and go to state 30
+    ANY             shift and go to state 31
+    ELLIPSIS        shift and go to state 32
+    LPAREN          shift and go to state 33
+    HINT_BLOCK      shift and go to state 34
+    FLOAT           shift and go to state 35
+    INT             shift and go to state 36
+    STRING          shift and go to state 37
+    SINGLE_STRING   shift and go to state 38
+    TRIPLE_STRING   shift and go to state 39
+    BOOLEAN         shift and go to state 40
+
+    exponent_expr                  shift and go to state 68
+    unary_expr                     shift and go to state 22
+    tag_path                       shift and go to state 23
+    member_expr                    shift and go to state 24
+    type_app_expr                  shift and go to state 26
+    primary_expr                   shift and go to state 27
+    literal                        shift and go to state 28
+
+state 51
+
+    (28) exponent_expr -> exponent_expr EXP_OP . unary_expr
+    (30) unary_expr -> . tag_path member_expr
+    (31) unary_expr -> . member_expr
+    (32) tag_path -> . TAGGED_CLASS_NAME
+    (33) tag_path -> . tag_path DOT CLASS_NAME
+    (34) member_expr -> . member_expr DOT CLASS_NAME
+    (35) member_expr -> . type_app_expr
+    (38) type_app_expr -> . CLASS_NAME name_tail optional_type_args
+    (39) type_app_expr -> . primary_expr
+    (48) primary_expr -> . CLASS_NAME
+    (49) primary_expr -> . literal
+    (50) primary_expr -> . NIL
+    (51) primary_expr -> . NEVER
+    (52) primary_expr -> . ANY
+    (53) primary_expr -> . ELLIPSIS
+    (54) primary_expr -> . LPAREN partial_expr RPAREN
+    (55) primary_expr -> . LPAREN adt_expr_list RPAREN
+    (56) primary_expr -> . HINT_BLOCK
+    (57) literal -> . FLOAT
+    (58) literal -> . INT
+    (59) literal -> . STRING
+    (60) literal -> . SINGLE_STRING
+    (61) literal -> . TRIPLE_STRING
+    (62) literal -> . BOOLEAN
+
+    TAGGED_CLASS_NAME shift and go to state 65
+    CLASS_NAME      shift and go to state 25
+    NIL             shift and go to state 29
+    NEVER           shift and go to state 30
+    ANY             shift and go to state 31
+    ELLIPSIS        shift and go to state 32
+    LPAREN          shift and go to state 33
+    HINT_BLOCK      shift and go to state 34
+    FLOAT           shift and go to state 35
+    INT             shift and go to state 36
+    STRING          shift and go to state 37
+    SINGLE_STRING   shift and go to state 38
+    TRIPLE_STRING   shift and go to state 39
+    BOOLEAN         shift and go to state 40
+
+    unary_expr                     shift and go to state 69
+    tag_path                       shift and go to state 23
+    member_expr                    shift and go to state 24
+    type_app_expr                  shift and go to state 26
+    primary_expr                   shift and go to state 27
+    literal                        shift and go to state 28
+
+state 52
+
+    (30) unary_expr -> tag_path member_expr .
+    (34) member_expr -> member_expr . DOT CLASS_NAME
+
+    EXP_OP          reduce using rule 30 (unary_expr -> tag_path member_expr .)
+    PROD_OP         reduce using rule 30 (unary_expr -> tag_path member_expr .)
+    SUM_OP          reduce using rule 30 (unary_expr -> tag_path member_expr .)
+    APPLY_OP        reduce using rule 30 (unary_expr -> tag_path member_expr .)
+    IMPORT          reduce using rule 30 (unary_expr -> tag_path member_expr .)
+    PATTERN         reduce using rule 30 (unary_expr -> tag_path member_expr .)
+    CLASS_NAME      reduce using rule 30 (unary_expr -> tag_path member_expr .)
+    $end            reduce using rule 30 (unary_expr -> tag_path member_expr .)
+    RPAREN          reduce using rule 30 (unary_expr -> tag_path member_expr .)
+    COMMA           reduce using rule 30 (unary_expr -> tag_path member_expr .)
+    RBRACKET        reduce using rule 30 (unary_expr -> tag_path member_expr .)
+    DOT             shift and go to state 54
+
+
+state 53
+
+    (33) tag_path -> tag_path DOT . CLASS_NAME
+
+    CLASS_NAME      shift and go to state 70
+
+
+state 54
+
+    (34) member_expr -> member_expr DOT . CLASS_NAME
+
+    CLASS_NAME      shift and go to state 71
+
+
+state 55
+
+    (38) type_app_expr -> CLASS_NAME name_tail . optional_type_args
+    (40) optional_type_args -> . LBRACKET partial_expr adt_arg_list RBRACKET
+    (41) optional_type_args -> . LBRACKET RBRACKET
+    (42) optional_type_args -> . epsilon
+    (63) epsilon -> .
+
+    LBRACKET        shift and go to state 73
+    DOT             reduce using rule 63 (epsilon -> .)
+    EXP_OP          reduce using rule 63 (epsilon -> .)
+    PROD_OP         reduce using rule 63 (epsilon -> .)
+    SUM_OP          reduce using rule 63 (epsilon -> .)
+    APPLY_OP        reduce using rule 63 (epsilon -> .)
+    IMPORT          reduce using rule 63 (epsilon -> .)
+    PATTERN         reduce using rule 63 (epsilon -> .)
+    CLASS_NAME      reduce using rule 63 (epsilon -> .)
+    $end            reduce using rule 63 (epsilon -> .)
+    RPAREN          reduce using rule 63 (epsilon -> .)
+    COMMA           reduce using rule 63 (epsilon -> .)
+    RBRACKET        reduce using rule 63 (epsilon -> .)
+
+    optional_type_args             shift and go to state 72
+    epsilon                        shift and go to state 74
+
+state 56
+
+    (36) name_tail -> DOT . CLASS_NAME name_tail
+
+    CLASS_NAME      shift and go to state 75
+
+
+state 57
+
+    (37) name_tail -> epsilon .
+
+    LBRACKET        reduce using rule 37 (name_tail -> epsilon .)
+    DOT             reduce using rule 37 (name_tail -> epsilon .)
+    EXP_OP          reduce using rule 37 (name_tail -> epsilon .)
+    PROD_OP         reduce using rule 37 (name_tail -> epsilon .)
+    SUM_OP          reduce using rule 37 (name_tail -> epsilon .)
+    APPLY_OP        reduce using rule 37 (name_tail -> epsilon .)
+    IMPORT          reduce using rule 37 (name_tail -> epsilon .)
+    PATTERN         reduce using rule 37 (name_tail -> epsilon .)
+    CLASS_NAME      reduce using rule 37 (name_tail -> epsilon .)
+    $end            reduce using rule 37 (name_tail -> epsilon .)
+    RPAREN          reduce using rule 37 (name_tail -> epsilon .)
+    COMMA           reduce using rule 37 (name_tail -> epsilon .)
+    RBRACKET        reduce using rule 37 (name_tail -> epsilon .)
+
+
+state 58
+
+    (54) primary_expr -> LPAREN partial_expr . RPAREN
+    (10) partial_expr -> partial_expr . APPLY_OP adt_expr
+    (45) adt_expr_list -> partial_expr . COMMA partial_expr
+    (46) adt_expr_list -> partial_expr . COMMA adt_expr_list
+
+    RPAREN          shift and go to state 76
+    APPLY_OP        shift and go to state 47
+    COMMA           shift and go to state 77
+
+
+state 59
+
+    (55) primary_expr -> LPAREN adt_expr_list . RPAREN
+
+    RPAREN          shift and go to state 78
+
+
+state 60
+
+    (14) type_definition -> CLASS_NAME ASSIGN partial_expr .
+    (10) partial_expr -> partial_expr . APPLY_OP adt_expr
+
+    IMPORT          reduce using rule 14 (type_definition -> CLASS_NAME ASSIGN partial_expr .)
+    PATTERN         reduce using rule 14 (type_definition -> CLASS_NAME ASSIGN partial_expr .)
+    CLASS_NAME      reduce using rule 14 (type_definition -> CLASS_NAME ASSIGN partial_expr .)
+    $end            reduce using rule 14 (type_definition -> CLASS_NAME ASSIGN partial_expr .)
+    APPLY_OP        shift and go to state 47
+
+
+state 61
+
+    (15) generic_definition -> CLASS_NAME LBRACKET CLASS_NAME . type_param_list RBRACKET ASSIGN partial_expr
+    (22) type_param_list -> . COMMA CLASS_NAME type_param_list
+    (23) type_param_list -> . epsilon
+    (63) epsilon -> .
+
+    COMMA           shift and go to state 80
+    RBRACKET        reduce using rule 63 (epsilon -> .)
+
+    type_param_list                shift and go to state 79
+    epsilon                        shift and go to state 81
+
+state 62
+
+    (18) class_path -> class_path DOT CLASS_NAME .
+
+    DOT             reduce using rule 18 (class_path -> class_path DOT CLASS_NAME .)
+    AS              reduce using rule 18 (class_path -> class_path DOT CLASS_NAME .)
+    IMPORT          reduce using rule 18 (class_path -> class_path DOT CLASS_NAME .)
+    PATTERN         reduce using rule 18 (class_path -> class_path DOT CLASS_NAME .)
+    CLASS_NAME      reduce using rule 18 (class_path -> class_path DOT CLASS_NAME .)
+    $end            reduce using rule 18 (class_path -> class_path DOT CLASS_NAME .)
+
+
+state 63
+
+    (20) optional_alias -> AS CLASS_NAME .
+
+    IMPORT          reduce using rule 20 (optional_alias -> AS CLASS_NAME .)
+    PATTERN         reduce using rule 20 (optional_alias -> AS CLASS_NAME .)
+    CLASS_NAME      reduce using rule 20 (optional_alias -> AS CLASS_NAME .)
+    $end            reduce using rule 20 (optional_alias -> AS CLASS_NAME .)
+
+
+state 64
+
+    (10) partial_expr -> partial_expr APPLY_OP adt_expr .
+    (24) adt_expr -> adt_expr . SUM_OP product_expr
+
+    APPLY_OP        reduce using rule 10 (partial_expr -> partial_expr APPLY_OP adt_expr .)
+    IMPORT          reduce using rule 10 (partial_expr -> partial_expr APPLY_OP adt_expr .)
+    PATTERN         reduce using rule 10 (partial_expr -> partial_expr APPLY_OP adt_expr .)
+    CLASS_NAME      reduce using rule 10 (partial_expr -> partial_expr APPLY_OP adt_expr .)
+    $end            reduce using rule 10 (partial_expr -> partial_expr APPLY_OP adt_expr .)
+    RPAREN          reduce using rule 10 (partial_expr -> partial_expr APPLY_OP adt_expr .)
+    COMMA           reduce using rule 10 (partial_expr -> partial_expr APPLY_OP adt_expr .)
+    RBRACKET        reduce using rule 10 (partial_expr -> partial_expr APPLY_OP adt_expr .)
+    SUM_OP          shift and go to state 48
+
+
+state 65
+
+    (32) tag_path -> TAGGED_CLASS_NAME .
+
+    DOT             reduce using rule 32 (tag_path -> TAGGED_CLASS_NAME .)
+    CLASS_NAME      reduce using rule 32 (tag_path -> TAGGED_CLASS_NAME .)
+    NIL             reduce using rule 32 (tag_path -> TAGGED_CLASS_NAME .)
+    NEVER           reduce using rule 32 (tag_path -> TAGGED_CLASS_NAME .)
+    ANY             reduce using rule 32 (tag_path -> TAGGED_CLASS_NAME .)
+    ELLIPSIS        reduce using rule 32 (tag_path -> TAGGED_CLASS_NAME .)
+    LPAREN          reduce using rule 32 (tag_path -> TAGGED_CLASS_NAME .)
+    HINT_BLOCK      reduce using rule 32 (tag_path -> TAGGED_CLASS_NAME .)
+    FLOAT           reduce using rule 32 (tag_path -> TAGGED_CLASS_NAME .)
+    INT             reduce using rule 32 (tag_path -> TAGGED_CLASS_NAME .)
+    STRING          reduce using rule 32 (tag_path -> TAGGED_CLASS_NAME .)
+    SINGLE_STRING   reduce using rule 32 (tag_path -> TAGGED_CLASS_NAME .)
+    TRIPLE_STRING   reduce using rule 32 (tag_path -> TAGGED_CLASS_NAME .)
+    BOOLEAN         reduce using rule 32 (tag_path -> TAGGED_CLASS_NAME .)
+
+
+state 66
+
+    (24) adt_expr -> adt_expr SUM_OP product_expr .
+    (26) product_expr -> product_expr . PROD_OP exponent_expr
+
+    SUM_OP          reduce using rule 24 (adt_expr -> adt_expr SUM_OP product_expr .)
+    APPLY_OP        reduce using rule 24 (adt_expr -> adt_expr SUM_OP product_expr .)
+    IMPORT          reduce using rule 24 (adt_expr -> adt_expr SUM_OP product_expr .)
+    PATTERN         reduce using rule 24 (adt_expr -> adt_expr SUM_OP product_expr .)
+    CLASS_NAME      reduce using rule 24 (adt_expr -> adt_expr SUM_OP product_expr .)
+    $end            reduce using rule 24 (adt_expr -> adt_expr SUM_OP product_expr .)
+    RPAREN          reduce using rule 24 (adt_expr -> adt_expr SUM_OP product_expr .)
+    COMMA           reduce using rule 24 (adt_expr -> adt_expr SUM_OP product_expr .)
+    RBRACKET        reduce using rule 24 (adt_expr -> adt_expr SUM_OP product_expr .)
+    PROD_OP         shift and go to state 50
+
+
+state 67
+
+    (11) partial_expr -> member_head APPLY_OP adt_expr .
+    (24) adt_expr -> adt_expr . SUM_OP product_expr
+
+    APPLY_OP        reduce using rule 11 (partial_expr -> member_head APPLY_OP adt_expr .)
+    IMPORT          reduce using rule 11 (partial_expr -> member_head APPLY_OP adt_expr .)
+    PATTERN         reduce using rule 11 (partial_expr -> member_head APPLY_OP adt_expr .)
+    CLASS_NAME      reduce using rule 11 (partial_expr -> member_head APPLY_OP adt_expr .)
+    $end            reduce using rule 11 (partial_expr -> member_head APPLY_OP adt_expr .)
+    RPAREN          reduce using rule 11 (partial_expr -> member_head APPLY_OP adt_expr .)
+    COMMA           reduce using rule 11 (partial_expr -> member_head APPLY_OP adt_expr .)
+    RBRACKET        reduce using rule 11 (partial_expr -> member_head APPLY_OP adt_expr .)
+    SUM_OP          shift and go to state 48
+
+
+state 68
+
+    (26) product_expr -> product_expr PROD_OP exponent_expr .
+    (28) exponent_expr -> exponent_expr . EXP_OP unary_expr
+
+    PROD_OP         reduce using rule 26 (product_expr -> product_expr PROD_OP exponent_expr .)
+    SUM_OP          reduce using rule 26 (product_expr -> product_expr PROD_OP exponent_expr .)
+    APPLY_OP        reduce using rule 26 (product_expr -> product_expr PROD_OP exponent_expr .)
+    IMPORT          reduce using rule 26 (product_expr -> product_expr PROD_OP exponent_expr .)
+    PATTERN         reduce using rule 26 (product_expr -> product_expr PROD_OP exponent_expr .)
+    CLASS_NAME      reduce using rule 26 (product_expr -> product_expr PROD_OP exponent_expr .)
+    $end            reduce using rule 26 (product_expr -> product_expr PROD_OP exponent_expr .)
+    RPAREN          reduce using rule 26 (product_expr -> product_expr PROD_OP exponent_expr .)
+    COMMA           reduce using rule 26 (product_expr -> product_expr PROD_OP exponent_expr .)
+    RBRACKET        reduce using rule 26 (product_expr -> product_expr PROD_OP exponent_expr .)
+    EXP_OP          shift and go to state 51
+
+
+state 69
+
+    (28) exponent_expr -> exponent_expr EXP_OP unary_expr .
+
+    EXP_OP          reduce using rule 28 (exponent_expr -> exponent_expr EXP_OP unary_expr .)
+    PROD_OP         reduce using rule 28 (exponent_expr -> exponent_expr EXP_OP unary_expr .)
+    SUM_OP          reduce using rule 28 (exponent_expr -> exponent_expr EXP_OP unary_expr .)
+    APPLY_OP        reduce using rule 28 (exponent_expr -> exponent_expr EXP_OP unary_expr .)
+    IMPORT          reduce using rule 28 (exponent_expr -> exponent_expr EXP_OP unary_expr .)
+    PATTERN         reduce using rule 28 (exponent_expr -> exponent_expr EXP_OP unary_expr .)
+    CLASS_NAME      reduce using rule 28 (exponent_expr -> exponent_expr EXP_OP unary_expr .)
+    $end            reduce using rule 28 (exponent_expr -> exponent_expr EXP_OP unary_expr .)
+    RPAREN          reduce using rule 28 (exponent_expr -> exponent_expr EXP_OP unary_expr .)
+    COMMA           reduce using rule 28 (exponent_expr -> exponent_expr EXP_OP unary_expr .)
+    RBRACKET        reduce using rule 28 (exponent_expr -> exponent_expr EXP_OP unary_expr .)
+
+
+state 70
+
+    (33) tag_path -> tag_path DOT CLASS_NAME .
+
+    DOT             reduce using rule 33 (tag_path -> tag_path DOT CLASS_NAME .)
+    CLASS_NAME      reduce using rule 33 (tag_path -> tag_path DOT CLASS_NAME .)
+    NIL             reduce using rule 33 (tag_path -> tag_path DOT CLASS_NAME .)
+    NEVER           reduce using rule 33 (tag_path -> tag_path DOT CLASS_NAME .)
+    ANY             reduce using rule 33 (tag_path -> tag_path DOT CLASS_NAME .)
+    ELLIPSIS        reduce using rule 33 (tag_path -> tag_path DOT CLASS_NAME .)
+    LPAREN          reduce using rule 33 (tag_path -> tag_path DOT CLASS_NAME .)
+    HINT_BLOCK      reduce using rule 33 (tag_path -> tag_path DOT CLASS_NAME .)
+    FLOAT           reduce using rule 33 (tag_path -> tag_path DOT CLASS_NAME .)
+    INT             reduce using rule 33 (tag_path -> tag_path DOT CLASS_NAME .)
+    STRING          reduce using rule 33 (tag_path -> tag_path DOT CLASS_NAME .)
+    SINGLE_STRING   reduce using rule 33 (tag_path -> tag_path DOT CLASS_NAME .)
+    TRIPLE_STRING   reduce using rule 33 (tag_path -> tag_path DOT CLASS_NAME .)
+    BOOLEAN         reduce using rule 33 (tag_path -> tag_path DOT CLASS_NAME .)
+
+
+state 71
+
+    (34) member_expr -> member_expr DOT CLASS_NAME .
+
+    DOT             reduce using rule 34 (member_expr -> member_expr DOT CLASS_NAME .)
+    EXP_OP          reduce using rule 34 (member_expr -> member_expr DOT CLASS_NAME .)
+    PROD_OP         reduce using rule 34 (member_expr -> member_expr DOT CLASS_NAME .)
+    SUM_OP          reduce using rule 34 (member_expr -> member_expr DOT CLASS_NAME .)
+    APPLY_OP        reduce using rule 34 (member_expr -> member_expr DOT CLASS_NAME .)
+    IMPORT          reduce using rule 34 (member_expr -> member_expr DOT CLASS_NAME .)
+    PATTERN         reduce using rule 34 (member_expr -> member_expr DOT CLASS_NAME .)
+    CLASS_NAME      reduce using rule 34 (member_expr -> member_expr DOT CLASS_NAME .)
+    $end            reduce using rule 34 (member_expr -> member_expr DOT CLASS_NAME .)
+    RPAREN          reduce using rule 34 (member_expr -> member_expr DOT CLASS_NAME .)
+    COMMA           reduce using rule 34 (member_expr -> member_expr DOT CLASS_NAME .)
+    RBRACKET        reduce using rule 34 (member_expr -> member_expr DOT CLASS_NAME .)
+
+
+state 72
+
+    (38) type_app_expr -> CLASS_NAME name_tail optional_type_args .
+
+    DOT             reduce using rule 38 (type_app_expr -> CLASS_NAME name_tail optional_type_args .)
+    EXP_OP          reduce using rule 38 (type_app_expr -> CLASS_NAME name_tail optional_type_args .)
+    PROD_OP         reduce using rule 38 (type_app_expr -> CLASS_NAME name_tail optional_type_args .)
+    SUM_OP          reduce using rule 38 (type_app_expr -> CLASS_NAME name_tail optional_type_args .)
+    APPLY_OP        reduce using rule 38 (type_app_expr -> CLASS_NAME name_tail optional_type_args .)
+    IMPORT          reduce using rule 38 (type_app_expr -> CLASS_NAME name_tail optional_type_args .)
+    PATTERN         reduce using rule 38 (type_app_expr -> CLASS_NAME name_tail optional_type_args .)
+    CLASS_NAME      reduce using rule 38 (type_app_expr -> CLASS_NAME name_tail optional_type_args .)
+    $end            reduce using rule 38 (type_app_expr -> CLASS_NAME name_tail optional_type_args .)
+    RPAREN          reduce using rule 38 (type_app_expr -> CLASS_NAME name_tail optional_type_args .)
+    COMMA           reduce using rule 38 (type_app_expr -> CLASS_NAME name_tail optional_type_args .)
+    RBRACKET        reduce using rule 38 (type_app_expr -> CLASS_NAME name_tail optional_type_args .)
+
+
+state 73
+
+    (40) optional_type_args -> LBRACKET . partial_expr adt_arg_list RBRACKET
+    (41) optional_type_args -> LBRACKET . RBRACKET
+    (10) partial_expr -> . partial_expr APPLY_OP adt_expr
+    (11) partial_expr -> . member_head APPLY_OP adt_expr
+    (12) partial_expr -> . adt_expr
+    (13) member_head -> . TAGGED_CLASS_NAME
+    (24) adt_expr -> . adt_expr SUM_OP product_expr
+    (25) adt_expr -> . product_expr
+    (26) product_expr -> . product_expr PROD_OP exponent_expr
+    (27) product_expr -> . exponent_expr
+    (28) exponent_expr -> . exponent_expr EXP_OP unary_expr
+    (29) exponent_expr -> . unary_expr
+    (30) unary_expr -> . tag_path member_expr
+    (31) unary_expr -> . member_expr
+    (32) tag_path -> . TAGGED_CLASS_NAME
+    (33) tag_path -> . tag_path DOT CLASS_NAME
+    (34) member_expr -> . member_expr DOT CLASS_NAME
+    (35) member_expr -> . type_app_expr
+    (38) type_app_expr -> . CLASS_NAME name_tail optional_type_args
+    (39) type_app_expr -> . primary_expr
+    (48) primary_expr -> . CLASS_NAME
+    (49) primary_expr -> . literal
+    (50) primary_expr -> . NIL
+    (51) primary_expr -> . NEVER
+    (52) primary_expr -> . ANY
+    (53) primary_expr -> . ELLIPSIS
+    (54) primary_expr -> . LPAREN partial_expr RPAREN
+    (55) primary_expr -> . LPAREN adt_expr_list RPAREN
+    (56) primary_expr -> . HINT_BLOCK
+    (57) literal -> . FLOAT
+    (58) literal -> . INT
+    (59) literal -> . STRING
+    (60) literal -> . SINGLE_STRING
+    (61) literal -> . TRIPLE_STRING
+    (62) literal -> . BOOLEAN
+
+    RBRACKET        shift and go to state 83
+    TAGGED_CLASS_NAME shift and go to state 19
+    CLASS_NAME      shift and go to state 25
+    NIL             shift and go to state 29
+    NEVER           shift and go to state 30
+    ANY             shift and go to state 31
+    ELLIPSIS        shift and go to state 32
+    LPAREN          shift and go to state 33
+    HINT_BLOCK      shift and go to state 34
+    FLOAT           shift and go to state 35
+    INT             shift and go to state 36
+    STRING          shift and go to state 37
+    SINGLE_STRING   shift and go to state 38
+    TRIPLE_STRING   shift and go to state 39
+    BOOLEAN         shift and go to state 40
+
+    partial_expr                   shift and go to state 82
+    adt_expr                       shift and go to state 17
+    member_head                    shift and go to state 18
+    product_expr                   shift and go to state 20
+    exponent_expr                  shift and go to state 21
+    unary_expr                     shift and go to state 22
+    tag_path                       shift and go to state 23
+    member_expr                    shift and go to state 24
+    type_app_expr                  shift and go to state 26
+    primary_expr                   shift and go to state 27
+    literal                        shift and go to state 28
+
+state 74
+
+    (42) optional_type_args -> epsilon .
+
+    DOT             reduce using rule 42 (optional_type_args -> epsilon .)
+    EXP_OP          reduce using rule 42 (optional_type_args -> epsilon .)
+    PROD_OP         reduce using rule 42 (optional_type_args -> epsilon .)
+    SUM_OP          reduce using rule 42 (optional_type_args -> epsilon .)
+    APPLY_OP        reduce using rule 42 (optional_type_args -> epsilon .)
+    IMPORT          reduce using rule 42 (optional_type_args -> epsilon .)
+    PATTERN         reduce using rule 42 (optional_type_args -> epsilon .)
+    CLASS_NAME      reduce using rule 42 (optional_type_args -> epsilon .)
+    $end            reduce using rule 42 (optional_type_args -> epsilon .)
+    RPAREN          reduce using rule 42 (optional_type_args -> epsilon .)
+    COMMA           reduce using rule 42 (optional_type_args -> epsilon .)
+    RBRACKET        reduce using rule 42 (optional_type_args -> epsilon .)
+
+
+state 75
+
+    (36) name_tail -> DOT CLASS_NAME . name_tail
+    (36) name_tail -> . DOT CLASS_NAME name_tail
+    (37) name_tail -> . epsilon
+    (63) epsilon -> .
+
+  ! shift/reduce conflict for DOT resolved as shift
+    DOT             shift and go to state 56
+    LBRACKET        reduce using rule 63 (epsilon -> .)
+    EXP_OP          reduce using rule 63 (epsilon -> .)
+    PROD_OP         reduce using rule 63 (epsilon -> .)
+    SUM_OP          reduce using rule 63 (epsilon -> .)
+    APPLY_OP        reduce using rule 63 (epsilon -> .)
+    IMPORT          reduce using rule 63 (epsilon -> .)
+    PATTERN         reduce using rule 63 (epsilon -> .)
+    CLASS_NAME      reduce using rule 63 (epsilon -> .)
+    $end            reduce using rule 63 (epsilon -> .)
+    RPAREN          reduce using rule 63 (epsilon -> .)
+    COMMA           reduce using rule 63 (epsilon -> .)
+    RBRACKET        reduce using rule 63 (epsilon -> .)
+
+  ! DOT             [ reduce using rule 63 (epsilon -> .) ]
+
+    name_tail                      shift and go to state 84
+    epsilon                        shift and go to state 57
+
+state 76
+
+    (54) primary_expr -> LPAREN partial_expr RPAREN .
+
+    DOT             reduce using rule 54 (primary_expr -> LPAREN partial_expr RPAREN .)
+    EXP_OP          reduce using rule 54 (primary_expr -> LPAREN partial_expr RPAREN .)
+    PROD_OP         reduce using rule 54 (primary_expr -> LPAREN partial_expr RPAREN .)
+    SUM_OP          reduce using rule 54 (primary_expr -> LPAREN partial_expr RPAREN .)
+    APPLY_OP        reduce using rule 54 (primary_expr -> LPAREN partial_expr RPAREN .)
+    IMPORT          reduce using rule 54 (primary_expr -> LPAREN partial_expr RPAREN .)
+    PATTERN         reduce using rule 54 (primary_expr -> LPAREN partial_expr RPAREN .)
+    CLASS_NAME      reduce using rule 54 (primary_expr -> LPAREN partial_expr RPAREN .)
+    $end            reduce using rule 54 (primary_expr -> LPAREN partial_expr RPAREN .)
+    RPAREN          reduce using rule 54 (primary_expr -> LPAREN partial_expr RPAREN .)
+    COMMA           reduce using rule 54 (primary_expr -> LPAREN partial_expr RPAREN .)
+    RBRACKET        reduce using rule 54 (primary_expr -> LPAREN partial_expr RPAREN .)
+
+
+state 77
+
+    (45) adt_expr_list -> partial_expr COMMA . partial_expr
+    (46) adt_expr_list -> partial_expr COMMA . adt_expr_list
+    (10) partial_expr -> . partial_expr APPLY_OP adt_expr
+    (11) partial_expr -> . member_head APPLY_OP adt_expr
+    (12) partial_expr -> . adt_expr
+    (45) adt_expr_list -> . partial_expr COMMA partial_expr
+    (46) adt_expr_list -> . partial_expr COMMA adt_expr_list
+    (47) adt_expr_list -> .
+    (13) member_head -> . TAGGED_CLASS_NAME
+    (24) adt_expr -> . adt_expr SUM_OP product_expr
+    (25) adt_expr -> . product_expr
+    (26) product_expr -> . product_expr PROD_OP exponent_expr
+    (27) product_expr -> . exponent_expr
+    (28) exponent_expr -> . exponent_expr EXP_OP unary_expr
+    (29) exponent_expr -> . unary_expr
+    (30) unary_expr -> . tag_path member_expr
+    (31) unary_expr -> . member_expr
+    (32) tag_path -> . TAGGED_CLASS_NAME
+    (33) tag_path -> . tag_path DOT CLASS_NAME
+    (34) member_expr -> . member_expr DOT CLASS_NAME
+    (35) member_expr -> . type_app_expr
+    (38) type_app_expr -> . CLASS_NAME name_tail optional_type_args
+    (39) type_app_expr -> . primary_expr
+    (48) primary_expr -> . CLASS_NAME
+    (49) primary_expr -> . literal
+    (50) primary_expr -> . NIL
+    (51) primary_expr -> . NEVER
+    (52) primary_expr -> . ANY
+    (53) primary_expr -> . ELLIPSIS
+    (54) primary_expr -> . LPAREN partial_expr RPAREN
+    (55) primary_expr -> . LPAREN adt_expr_list RPAREN
+    (56) primary_expr -> . HINT_BLOCK
+    (57) literal -> . FLOAT
+    (58) literal -> . INT
+    (59) literal -> . STRING
+    (60) literal -> . SINGLE_STRING
+    (61) literal -> . TRIPLE_STRING
+    (62) literal -> . BOOLEAN
+
+    RPAREN          reduce using rule 47 (adt_expr_list -> .)
+    TAGGED_CLASS_NAME shift and go to state 19
+    CLASS_NAME      shift and go to state 25
+    NIL             shift and go to state 29
+    NEVER           shift and go to state 30
+    ANY             shift and go to state 31
+    ELLIPSIS        shift and go to state 32
+    LPAREN          shift and go to state 33
+    HINT_BLOCK      shift and go to state 34
+    FLOAT           shift and go to state 35
+    INT             shift and go to state 36
+    STRING          shift and go to state 37
+    SINGLE_STRING   shift and go to state 38
+    TRIPLE_STRING   shift and go to state 39
+    BOOLEAN         shift and go to state 40
+
+    partial_expr                   shift and go to state 85
+    adt_expr_list                  shift and go to state 86
+    adt_expr                       shift and go to state 17
+    member_head                    shift and go to state 18
+    product_expr                   shift and go to state 20
+    exponent_expr                  shift and go to state 21
+    unary_expr                     shift and go to state 22
+    tag_path                       shift and go to state 23
+    member_expr                    shift and go to state 24
+    type_app_expr                  shift and go to state 26
+    primary_expr                   shift and go to state 27
+    literal                        shift and go to state 28
+
+state 78
+
+    (55) primary_expr -> LPAREN adt_expr_list RPAREN .
+
+    DOT             reduce using rule 55 (primary_expr -> LPAREN adt_expr_list RPAREN .)
+    EXP_OP          reduce using rule 55 (primary_expr -> LPAREN adt_expr_list RPAREN .)
+    PROD_OP         reduce using rule 55 (primary_expr -> LPAREN adt_expr_list RPAREN .)
+    SUM_OP          reduce using rule 55 (primary_expr -> LPAREN adt_expr_list RPAREN .)
+    APPLY_OP        reduce using rule 55 (primary_expr -> LPAREN adt_expr_list RPAREN .)
+    IMPORT          reduce using rule 55 (primary_expr -> LPAREN adt_expr_list RPAREN .)
+    PATTERN         reduce using rule 55 (primary_expr -> LPAREN adt_expr_list RPAREN .)
+    CLASS_NAME      reduce using rule 55 (primary_expr -> LPAREN adt_expr_list RPAREN .)
+    $end            reduce using rule 55 (primary_expr -> LPAREN adt_expr_list RPAREN .)
+    RPAREN          reduce using rule 55 (primary_expr -> LPAREN adt_expr_list RPAREN .)
+    COMMA           reduce using rule 55 (primary_expr -> LPAREN adt_expr_list RPAREN .)
+    RBRACKET        reduce using rule 55 (primary_expr -> LPAREN adt_expr_list RPAREN .)
+
+
+state 79
+
+    (15) generic_definition -> CLASS_NAME LBRACKET CLASS_NAME type_param_list . RBRACKET ASSIGN partial_expr
+
+    RBRACKET        shift and go to state 87
+
+
+state 80
+
+    (22) type_param_list -> COMMA . CLASS_NAME type_param_list
+
+    CLASS_NAME      shift and go to state 88
+
+
+state 81
+
+    (23) type_param_list -> epsilon .
+
+    RBRACKET        reduce using rule 23 (type_param_list -> epsilon .)
+
+
+state 82
+
+    (40) optional_type_args -> LBRACKET partial_expr . adt_arg_list RBRACKET
+    (10) partial_expr -> partial_expr . APPLY_OP adt_expr
+    (43) adt_arg_list -> . COMMA partial_expr adt_arg_list
+    (44) adt_arg_list -> . epsilon
+    (63) epsilon -> .
+
+    APPLY_OP        shift and go to state 47
+    COMMA           shift and go to state 90
+    RBRACKET        reduce using rule 63 (epsilon -> .)
+
+    adt_arg_list                   shift and go to state 89
+    epsilon                        shift and go to state 91
+
+state 83
+
+    (41) optional_type_args -> LBRACKET RBRACKET .
+
+    DOT             reduce using rule 41 (optional_type_args -> LBRACKET RBRACKET .)
+    EXP_OP          reduce using rule 41 (optional_type_args -> LBRACKET RBRACKET .)
+    PROD_OP         reduce using rule 41 (optional_type_args -> LBRACKET RBRACKET .)
+    SUM_OP          reduce using rule 41 (optional_type_args -> LBRACKET RBRACKET .)
+    APPLY_OP        reduce using rule 41 (optional_type_args -> LBRACKET RBRACKET .)
+    IMPORT          reduce using rule 41 (optional_type_args -> LBRACKET RBRACKET .)
+    PATTERN         reduce using rule 41 (optional_type_args -> LBRACKET RBRACKET .)
+    CLASS_NAME      reduce using rule 41 (optional_type_args -> LBRACKET RBRACKET .)
+    $end            reduce using rule 41 (optional_type_args -> LBRACKET RBRACKET .)
+    RPAREN          reduce using rule 41 (optional_type_args -> LBRACKET RBRACKET .)
+    COMMA           reduce using rule 41 (optional_type_args -> LBRACKET RBRACKET .)
+    RBRACKET        reduce using rule 41 (optional_type_args -> LBRACKET RBRACKET .)
+
+
+state 84
+
+    (36) name_tail -> DOT CLASS_NAME name_tail .
+
+    LBRACKET        reduce using rule 36 (name_tail -> DOT CLASS_NAME name_tail .)
+    DOT             reduce using rule 36 (name_tail -> DOT CLASS_NAME name_tail .)
+    EXP_OP          reduce using rule 36 (name_tail -> DOT CLASS_NAME name_tail .)
+    PROD_OP         reduce using rule 36 (name_tail -> DOT CLASS_NAME name_tail .)
+    SUM_OP          reduce using rule 36 (name_tail -> DOT CLASS_NAME name_tail .)
+    APPLY_OP        reduce using rule 36 (name_tail -> DOT CLASS_NAME name_tail .)
+    IMPORT          reduce using rule 36 (name_tail -> DOT CLASS_NAME name_tail .)
+    PATTERN         reduce using rule 36 (name_tail -> DOT CLASS_NAME name_tail .)
+    CLASS_NAME      reduce using rule 36 (name_tail -> DOT CLASS_NAME name_tail .)
+    $end            reduce using rule 36 (name_tail -> DOT CLASS_NAME name_tail .)
+    RPAREN          reduce using rule 36 (name_tail -> DOT CLASS_NAME name_tail .)
+    COMMA           reduce using rule 36 (name_tail -> DOT CLASS_NAME name_tail .)
+    RBRACKET        reduce using rule 36 (name_tail -> DOT CLASS_NAME name_tail .)
+
+
+state 85
+
+    (45) adt_expr_list -> partial_expr COMMA partial_expr .
+    (10) partial_expr -> partial_expr . APPLY_OP adt_expr
+    (45) adt_expr_list -> partial_expr . COMMA partial_expr
+    (46) adt_expr_list -> partial_expr . COMMA adt_expr_list
+
+    RPAREN          reduce using rule 45 (adt_expr_list -> partial_expr COMMA partial_expr .)
+    APPLY_OP        shift and go to state 47
+    COMMA           shift and go to state 77
+
+
+state 86
+
+    (46) adt_expr_list -> partial_expr COMMA adt_expr_list .
+
+    RPAREN          reduce using rule 46 (adt_expr_list -> partial_expr COMMA adt_expr_list .)
+
+
+state 87
+
+    (15) generic_definition -> CLASS_NAME LBRACKET CLASS_NAME type_param_list RBRACKET . ASSIGN partial_expr
+
+    ASSIGN          shift and go to state 92
+
+
+state 88
+
+    (22) type_param_list -> COMMA CLASS_NAME . type_param_list
+    (22) type_param_list -> . COMMA CLASS_NAME type_param_list
+    (23) type_param_list -> . epsilon
+    (63) epsilon -> .
+
+    COMMA           shift and go to state 80
+    RBRACKET        reduce using rule 63 (epsilon -> .)
+
+    type_param_list                shift and go to state 93
+    epsilon                        shift and go to state 81
+
+state 89
+
+    (40) optional_type_args -> LBRACKET partial_expr adt_arg_list . RBRACKET
+
+    RBRACKET        shift and go to state 94
+
+
+state 90
+
+    (43) adt_arg_list -> COMMA . partial_expr adt_arg_list
+    (10) partial_expr -> . partial_expr APPLY_OP adt_expr
+    (11) partial_expr -> . member_head APPLY_OP adt_expr
+    (12) partial_expr -> . adt_expr
+    (13) member_head -> . TAGGED_CLASS_NAME
+    (24) adt_expr -> . adt_expr SUM_OP product_expr
+    (25) adt_expr -> . product_expr
+    (26) product_expr -> . product_expr PROD_OP exponent_expr
+    (27) product_expr -> . exponent_expr
+    (28) exponent_expr -> . exponent_expr EXP_OP unary_expr
+    (29) exponent_expr -> . unary_expr
+    (30) unary_expr -> . tag_path member_expr
+    (31) unary_expr -> . member_expr
+    (32) tag_path -> . TAGGED_CLASS_NAME
+    (33) tag_path -> . tag_path DOT CLASS_NAME
+    (34) member_expr -> . member_expr DOT CLASS_NAME
+    (35) member_expr -> . type_app_expr
+    (38) type_app_expr -> . CLASS_NAME name_tail optional_type_args
+    (39) type_app_expr -> . primary_expr
+    (48) primary_expr -> . CLASS_NAME
+    (49) primary_expr -> . literal
+    (50) primary_expr -> . NIL
+    (51) primary_expr -> . NEVER
+    (52) primary_expr -> . ANY
+    (53) primary_expr -> . ELLIPSIS
+    (54) primary_expr -> . LPAREN partial_expr RPAREN
+    (55) primary_expr -> . LPAREN adt_expr_list RPAREN
+    (56) primary_expr -> . HINT_BLOCK
+    (57) literal -> . FLOAT
+    (58) literal -> . INT
+    (59) literal -> . STRING
+    (60) literal -> . SINGLE_STRING
+    (61) literal -> . TRIPLE_STRING
+    (62) literal -> . BOOLEAN
+
+    TAGGED_CLASS_NAME shift and go to state 19
+    CLASS_NAME      shift and go to state 25
+    NIL             shift and go to state 29
+    NEVER           shift and go to state 30
+    ANY             shift and go to state 31
+    ELLIPSIS        shift and go to state 32
+    LPAREN          shift and go to state 33
+    HINT_BLOCK      shift and go to state 34
+    FLOAT           shift and go to state 35
+    INT             shift and go to state 36
+    STRING          shift and go to state 37
+    SINGLE_STRING   shift and go to state 38
+    TRIPLE_STRING   shift and go to state 39
+    BOOLEAN         shift and go to state 40
+
+    partial_expr                   shift and go to state 95
+    adt_expr                       shift and go to state 17
+    member_head                    shift and go to state 18
+    product_expr                   shift and go to state 20
+    exponent_expr                  shift and go to state 21
+    unary_expr                     shift and go to state 22
+    tag_path                       shift and go to state 23
+    member_expr                    shift and go to state 24
+    type_app_expr                  shift and go to state 26
+    primary_expr                   shift and go to state 27
+    literal                        shift and go to state 28
+
+state 91
+
+    (44) adt_arg_list -> epsilon .
+
+    RBRACKET        reduce using rule 44 (adt_arg_list -> epsilon .)
+
+
+state 92
+
+    (15) generic_definition -> CLASS_NAME LBRACKET CLASS_NAME type_param_list RBRACKET ASSIGN . partial_expr
+    (10) partial_expr -> . partial_expr APPLY_OP adt_expr
+    (11) partial_expr -> . member_head APPLY_OP adt_expr
+    (12) partial_expr -> . adt_expr
+    (13) member_head -> . TAGGED_CLASS_NAME
+    (24) adt_expr -> . adt_expr SUM_OP product_expr
+    (25) adt_expr -> . product_expr
+    (26) product_expr -> . product_expr PROD_OP exponent_expr
+    (27) product_expr -> . exponent_expr
+    (28) exponent_expr -> . exponent_expr EXP_OP unary_expr
+    (29) exponent_expr -> . unary_expr
+    (30) unary_expr -> . tag_path member_expr
+    (31) unary_expr -> . member_expr
+    (32) tag_path -> . TAGGED_CLASS_NAME
+    (33) tag_path -> . tag_path DOT CLASS_NAME
+    (34) member_expr -> . member_expr DOT CLASS_NAME
+    (35) member_expr -> . type_app_expr
+    (38) type_app_expr -> . CLASS_NAME name_tail optional_type_args
+    (39) type_app_expr -> . primary_expr
+    (48) primary_expr -> . CLASS_NAME
+    (49) primary_expr -> . literal
+    (50) primary_expr -> . NIL
+    (51) primary_expr -> . NEVER
+    (52) primary_expr -> . ANY
+    (53) primary_expr -> . ELLIPSIS
+    (54) primary_expr -> . LPAREN partial_expr RPAREN
+    (55) primary_expr -> . LPAREN adt_expr_list RPAREN
+    (56) primary_expr -> . HINT_BLOCK
+    (57) literal -> . FLOAT
+    (58) literal -> . INT
+    (59) literal -> . STRING
+    (60) literal -> . SINGLE_STRING
+    (61) literal -> . TRIPLE_STRING
+    (62) literal -> . BOOLEAN
+
+    TAGGED_CLASS_NAME shift and go to state 19
+    CLASS_NAME      shift and go to state 25
+    NIL             shift and go to state 29
+    NEVER           shift and go to state 30
+    ANY             shift and go to state 31
+    ELLIPSIS        shift and go to state 32
+    LPAREN          shift and go to state 33
+    HINT_BLOCK      shift and go to state 34
+    FLOAT           shift and go to state 35
+    INT             shift and go to state 36
+    STRING          shift and go to state 37
+    SINGLE_STRING   shift and go to state 38
+    TRIPLE_STRING   shift and go to state 39
+    BOOLEAN         shift and go to state 40
+
+    partial_expr                   shift and go to state 96
+    adt_expr                       shift and go to state 17
+    member_head                    shift and go to state 18
+    product_expr                   shift and go to state 20
+    exponent_expr                  shift and go to state 21
+    unary_expr                     shift and go to state 22
+    tag_path                       shift and go to state 23
+    member_expr                    shift and go to state 24
+    type_app_expr                  shift and go to state 26
+    primary_expr                   shift and go to state 27
+    literal                        shift and go to state 28
+
+state 93
+
+    (22) type_param_list -> COMMA CLASS_NAME type_param_list .
+
+    RBRACKET        reduce using rule 22 (type_param_list -> COMMA CLASS_NAME type_param_list .)
+
+
+state 94
+
+    (40) optional_type_args -> LBRACKET partial_expr adt_arg_list RBRACKET .
+
+    DOT             reduce using rule 40 (optional_type_args -> LBRACKET partial_expr adt_arg_list RBRACKET .)
+    EXP_OP          reduce using rule 40 (optional_type_args -> LBRACKET partial_expr adt_arg_list RBRACKET .)
+    PROD_OP         reduce using rule 40 (optional_type_args -> LBRACKET partial_expr adt_arg_list RBRACKET .)
+    SUM_OP          reduce using rule 40 (optional_type_args -> LBRACKET partial_expr adt_arg_list RBRACKET .)
+    APPLY_OP        reduce using rule 40 (optional_type_args -> LBRACKET partial_expr adt_arg_list RBRACKET .)
+    IMPORT          reduce using rule 40 (optional_type_args -> LBRACKET partial_expr adt_arg_list RBRACKET .)
+    PATTERN         reduce using rule 40 (optional_type_args -> LBRACKET partial_expr adt_arg_list RBRACKET .)
+    CLASS_NAME      reduce using rule 40 (optional_type_args -> LBRACKET partial_expr adt_arg_list RBRACKET .)
+    $end            reduce using rule 40 (optional_type_args -> LBRACKET partial_expr adt_arg_list RBRACKET .)
+    RPAREN          reduce using rule 40 (optional_type_args -> LBRACKET partial_expr adt_arg_list RBRACKET .)
+    COMMA           reduce using rule 40 (optional_type_args -> LBRACKET partial_expr adt_arg_list RBRACKET .)
+    RBRACKET        reduce using rule 40 (optional_type_args -> LBRACKET partial_expr adt_arg_list RBRACKET .)
+
+
+state 95
+
+    (43) adt_arg_list -> COMMA partial_expr . adt_arg_list
+    (10) partial_expr -> partial_expr . APPLY_OP adt_expr
+    (43) adt_arg_list -> . COMMA partial_expr adt_arg_list
+    (44) adt_arg_list -> . epsilon
+    (63) epsilon -> .
+
+    APPLY_OP        shift and go to state 47
+    COMMA           shift and go to state 90
+    RBRACKET        reduce using rule 63 (epsilon -> .)
+
+    adt_arg_list                   shift and go to state 97
+    epsilon                        shift and go to state 91
+
+state 96
+
+    (15) generic_definition -> CLASS_NAME LBRACKET CLASS_NAME type_param_list RBRACKET ASSIGN partial_expr .
+    (10) partial_expr -> partial_expr . APPLY_OP adt_expr
+
+    IMPORT          reduce using rule 15 (generic_definition -> CLASS_NAME LBRACKET CLASS_NAME type_param_list RBRACKET ASSIGN partial_expr .)
+    PATTERN         reduce using rule 15 (generic_definition -> CLASS_NAME LBRACKET CLASS_NAME type_param_list RBRACKET ASSIGN partial_expr .)
+    CLASS_NAME      reduce using rule 15 (generic_definition -> CLASS_NAME LBRACKET CLASS_NAME type_param_list RBRACKET ASSIGN partial_expr .)
+    $end            reduce using rule 15 (generic_definition -> CLASS_NAME LBRACKET CLASS_NAME type_param_list RBRACKET ASSIGN partial_expr .)
+    APPLY_OP        shift and go to state 47
+
+
+state 97
+
+    (43) adt_arg_list -> COMMA partial_expr adt_arg_list .
+
+    RBRACKET        reduce using rule 43 (adt_arg_list -> COMMA partial_expr adt_arg_list .)
+
+WARNING: 
+WARNING: Conflicts:
+WARNING: 
+WARNING: shift/reduce conflict for DOT in state 25 resolved as shift
+WARNING: shift/reduce conflict for DOT in state 25 resolved as shift
+WARNING: shift/reduce conflict for DOT in state 75 resolved as shift
+WARNING: reduce/reduce conflict in state 25 resolved using rule (primary_expr -> CLASS_NAME)
+WARNING: rejected rule (epsilon -> <empty>) in state 25

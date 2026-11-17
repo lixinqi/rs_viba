@@ -1,0 +1,419 @@
+# Viba 定义规范
+
+[`viba-reference.md`](viba-reference.md) 是语言参考：语法、算子、例子。这一份讲**一份定义怎么才叫对、才叫清楚**——
+给做出这些定义的人看。三段：先想清楚结构，再落笔，最后自检。
+
+## 1. 结构能说的，不要留给断言
+
+能由**类型结构**保证的事（有哪几个字段、什么类型、是不是可重复、和有几个分支），就放进结构里；
+不要退化成一句提示（`Assert[{...}]`、`{...}`）或一个运行时判断。
+
+`Assert` / `Hint` / `Appendix` 这类名字在类型层是**单位元**：`Assert[{no cycles}]` 只是挂了一段
+文字，判定会把它当单位跳过去，它约束不了任何东西。典型的多余形式是给"叶子"再加一个字段：
+
+```viba
+# 叶子就是 children 为空——不需要一个 $is_leaf bool 去追着结构跑
+Node =
+  Object
+  * $children list[Node]
+```
+
+结构说不了的**全局**不变量（不成环、单父、整体连通）不要散成断言：一句挂在类型上的文字约束不了
+任何东西，而这类不变量类型层也表达不了 —— 要检查它们，只能是另一份程序，在宿主那一侧跑。
+
+## 2. 只被用一次的中间类型不要造
+
+只被引用一次、又不承载独立语义的包装类型一律摊平到使用处：别名、单字段 `Object`、`XxxRequest`。
+先问两条：**有没有第二处复用？名字有没有提供额外信息？** 都没有就别造。
+
+函数参数尤其不要包成一个请求类型——看的人得来回跳。参数直接列在函数链上：
+
+```viba
+# 不要 RegroupRequest = Object * $id Id * $target Target
+#     Regroup = Result <- $req RegroupRequest <- { ... }
+Regroup =
+    Result
+  <- $env Environment
+  <- $id Id
+  <- $target Target
+  <- { move the node that id names under target }
+```
+
+## 3. 递归结构长成它该有的样子
+
+- **子节点是 `list[T]`，不是单个 `T`**：单个孩子把树退化成了链表，将来要加第二个孩子就得改结构。
+- **叶子由 `list` 自己的 `nil` 分支表达**：空列表就是那个 `nil`，不要在元素类型里再放 `| nil`
+  （那会把"这一层没有孩子"和"孩子这个值可以缺失"混成一件事）。
+
+```viba
+List[T] =
+  Oneof
+  | Object
+    * $head T
+    * $tail List[T]
+  | nil
+```
+
+## 4. 概念落在问题域，别名要诚实
+
+- **先确认是真实概念，再建模。** 问题域里真实存在的术语直接用；你自己拍出来的抽象结构是**设计
+  选择**，不要落成领域事实。分清"领域共识"和"我的推断"。
+- **别名要诚实。** `UserId = int`、`StateName = str` 能让字段自解释、将来能收紧成枚举；但它在类型
+  系统里与裸 `int` / `str` **等价**，并不阻止错填。别为了对称硬造一对没有区分度的别名。
+- **给单位元起的名字不是新类型。** `Red = Object`、`Blue = Object`、`Green = Object` 是三个名字指的
+  同一个类型（单位元，和 `nil` 等价），`Color = Red | Blue | Green` 因此也是单位元，不是三个选项。
+  要三个颜色，让每个名字承载不同的结构：带 tag（`$red Object`）、用字面量（`"red"`），或者装不同的
+  成员。判定按结构（[`viba-is-sub-type.md`](viba-is-sub-type.md) 第 2 节），名字不参与。
+
+## 5. 标签就是语义
+
+积的每个成员、函数的每个实参，都带 tag；tag 要**自解释**——看 tag 就知道装的是什么，不要留一个
+含糊的短名让人猜：
+
+```viba
+Point = $x float * $y float
+Handler = Response <- $request Request
+```
+
+不要落成 `Point = float * float`（看的人不知道哪个是横、哪个是竖）、`Handler = Response <-
+Request`（这个参数是什么）或 `$d int`（哪个 d？）。
+
+一个类型要作为独立的值参与匹配或结构判定时，它得和别的类型结构不同（[`viba-is-sub-type.md`](viba-is-sub-type.md)
+第 2 节）：裸的 `Object` 是单位元，和别的单位元分不开。这时给它一个 tag，用 `tagged[__type__, T]` 就
+不必把名字抄一遍——`FooBar = tagged[__type__, Object]` 与 `FooBar = $FooBar Object` 是同一个类型，
+`__type__` 就是这份定义自己的名字（泛型用泛型自己的名字，不带实参）。
+
+`tagged[__type__, T]` 是**一个成员**，不是一个把整个积包进去的壳。它和别的成员一样用 `*` 连起来，
+放在积里就是积的一项：
+
+```viba
+ExternalOnlyPublic =
+     tagged[__type__, Object]
+  * $statement (str * { 外部只依赖 public，types/apis 是内部实现 })
+  * $evidence (str * { 原话：外部只能依赖 public })
+  * { 正例见 examples/ExternalOnlyPublic/positive }
+```
+
+这几项是并列的：带 tag 的那一项、两个 `str` 成员、一个提示块。**不要**把积写进 `tagged` 的第二个参数
+——`tagged[__type__, Object * $statement (...)]` 只说明"有一个成员，它的 tag 是定义名、里面装着这个
+积"，整个定义就成了一个成员，收数据的、做匹配的都和并列写法对不上。
+
+`tagged[S, T]` 总是"带 tag `S` 的那一项"：两个参数，一个符号，一个它装的东西；符号是 `__type__` 时
+那个符号就是这份定义自己的名字。
+
+tag 出现在链头时，它命中的是**第一个参数的成员**：`$sub_env << args.env << "x"` 就是
+`args.env.sub_env << args.env << "x"`（见 [`viba-interpreter.md`](../exec/viba-interpreter.md)）。tag 不是值，
+`method = $sub_env` 这种源码形式编不过。
+
+tag 也可以在**字符串**里：`tagged["hello"] << X` 就是 `$hello << X`，`tagged["a", T]`
+就是 `$a T` —— 名字本来就是字符串的时候这样用，见 [`viba-pattern.md`](viba-pattern.md) 第 3 节。
+
+**点号取的是成员，定义左边只有一个名字。** 定义永远是 `A = …`：`a.b = A` 编不过。`a.b` 是在 `a`
+上取成员 `b` —— 模块的成员、积的成员、泛型应用选中的那个模块的成员，都是一回事：
+
+```viba
+WeightPlan = $steps Step * $cost Cost
+Handler = Response <- $env Env <- $request Request
+```
+
+一块 API 就是几个并列的定义，用的时候拿模块名一段一段取（`mooncake.reshard.weight.plan_storage_move`
+这样一串只出现在**取**的时候：`mooncake` 是模块，后面每一段都是在上一段上取成员）。
+**同一个名字不许出现两次**：一个模块里把同一个名字定义两次是程序错误。
+
+不带标签的成员只留给"本来就没有名字"的东西：
+
+- **元组**：`(A, B)`——顺序本身就是语义；
+- **空**：`nil` 这样的分支（这一支什么都不是）；
+- **裸值分支**：`int | str`——按值的种类区分的叶子。
+
+**一个和的可选项，靠值的种类或者靠 tag 区分。** 不带标签是允许的，但**同名**的可选项必须带标签：
+`list[str]` 与 `list[int]` 算同名（都叫 `list`），两个 `int` 也算同名——`$a int | $b int` 可以，
+`int | int` 不行。字面量按"种类 + 值"算：`"a"` 与 `"b"` 是两个可选项，不必带标签；两个 `7` 才是
+同一个。名字还没定下来的可选项（泛型形参直接做可选项）同样必须带标签。可选项本身还是
+和时，把它的子孙可选项摊到一起来判：同名或同 tag 都算错。单位元（`nil` / `never` / `Oneof`）不算
+可选项——它们没有内容，也就没有标签可带。
+
+## 6. 一行不带头，多行块的头放在第一行
+
+`Object` 是积的单位元（就是 `nil`），`Oneof` 是和的单位元（就是 `never`）。带不带头都是同一个类型
+（`Object * $x int` 与 `$x int` 互为子类型），所以这是**版式**上的事：
+
+- **一行**：不带头。整份定义一眼看全，头是多余的：用 `Parent = nil | $parent_of Node`，**不是**
+  `Parent = Oneof | nil | $parent_of Node`。
+- **摊成多行块**：头放在第一行。块的第一行就是"这一块是积还是和"的说明书；块以字段或分支开头，等于
+  让看的人自己去猜。
+
+```viba
+Option[T] = $some T | nil
+Config = $mode "fast" * $threads 42 * $ratio 3.14
+Parent = nil | $parent_of Node
+UserId = int
+
+Entry =
+  Object
+  * $name str
+  * $state State
+
+Result =
+  Oneof
+  | $ok Entry
+  | $missing UserId
+```
+
+链**内部**的单位仍用 `nil` / `never`——`Object` / `Oneof` 只是块头的拼法。**指数永远不带头**：
+它的第一个元素就是结果，每个实参带自己的 tag。
+
+递归结构是**类型**在指自己，不是执行在绕回来：`List[T]` 那样定义没问题。执行上的递归（函数又调到
+自己）在一份文件里不出现——文件里的定义不许绕回自己，见 [`viba-interpreter.md`](../exec/viba-interpreter.md)。
+
+## 7. 一支不成和
+
+和的链只有一支时，头和这一层都是多余的：`Oneof | T` 就是 `T`，`Oneof | $x T` 就是 `$x T`。所以：
+
+- 要表达"二选一"，至少两支：`Result = $ok Entry | $missing UserId`；
+- 只有一种情况就别用和：直接用那个成员，或者（想给它一个名字）做成一个带标签的积
+  `Box = Object * $value T`。
+
+**也别把单个 `Object` 再包进 `Oneof`**：`Oneof | Object * $x int * $y int` 与
+`Object * $x int * $y int` 互为子类型，多包一层只是让看的人多找一次"和在哪"。
+
+积这边有个对称的坑：**不带标签的单成员不是那个成员**。`Object * int` 与 `int` 不是同一个类型
+（前者是"一个位置成员的积"），而且看不出这个成员是什么——这正是第 5 条要求成员带 tag 的原因。
+
+## 8. 容器：`list` / `set` / `dict`
+
+三个容器是内建的，用法就四件事：**源码形式、字面量、寻址、问在不在**。
+
+```viba
+Items = $items list[int]
+Tags = $tags set[str]
+Table = $table dict[str, int]
+Nested = $nested list[dict[str, int]]
+```
+
+- **源码形式**：`list[T]` 有序、按位置寻址；`set[T]` 无序（枚举顺序由实现定）；`dict[K, V]` 按键寻址。
+  键用 `str`——访问协议里按键那一步就是 `$at_key str`。
+- **没有 `repeated` 这回事**：一个字段可重复就把类型落成 `list[T]`，不要再包一层。
+- **字面量有它自己的源码形式**：`ListLiteral[1, "x"]`、`SetLiteral[1, 2]`、`DictLiteral[("k", 1)]`，
+  空的是 `ListLiteral[]`。它们是 `list[...]` 之类的居民，出现在**实例**那一侧：放在值的位置上就是那个
+  容器本身，所以能数、能按地址取、能当实参交给宿主、也能原样序列化回去。
+- **寻址用 `$get_item`**：位置给 int，键给 str，两者各对应一条地址步子
+  （`$at_index int` / `$at_key str`）。`$get_item << xs << $env nil << 1` 是 `xs[1]`，
+  `$get_item << table << $env nil << "k"` 是 `table["k"]`；地址还没给时它是一条闭包，给了才走这一步取它。
+  按名字取成员是另一个：`$get_attr`（见 [`viba-interpreter.md`](../exec/viba-interpreter.md)）。
+- **环境排在第一位，而且总是要**：`$get_item`、`$in`、`$len`、`$keys`、`$get_attr` 这五个名字是解释器
+  自己答的内建成员，签名跟别的调用一样以 `$env Env` 开头。没给环境时链留着不动，那是一条**闭包**——
+  正因如此它们能当 `sequential` 的一步（环境由跑链的那一方给，
+  [`viba-interpreter.md`](../exec/viba-interpreter.md)）。实现里不用这份环境：答案只从成员自己的实参算出来，
+  所以解释器自己拼链时那一位给的是 `nil`（方括号简式 `xs[1]` 就是这样），给 `nil` 跟给真环境答的一样。
+- **方括号是它的简式**：`xs[1]` 就是 `$get_item << xs << $env nil << 1`，`table["k"]` 就是
+  `$get_item << table << $env nil << "k"`，容器可以是一条名字路径（`box.xs[1]`）。方括号只跟在名字后面，
+  一层：`xs[0][1]` 要落成 `$get_item << xs[0] << $env nil << 1`。放在**值**的位置上它是这一步的取用；
+  放在积的成员里时它跟别的成员一样是**源码里的数据**（不在这里取它，`viba-interpreter.md`）。
+- **问在不在用 `$in`**：`$in << xs << $env nil << 3` 问元素在不在（list / set / tuple），
+  `$in << table << $env nil << "k"` 问键在不在（dict）。答的是 `bool`；被问的不是容器、或者给 dict 的不是
+  一个字符串键，都是程序错。
+- **数一数用 `$len`**：`$len << xs << $env nil` 给元素个数（list / set / tuple），
+  `$len << table << $env nil` 给键数（dict）。答的是 `int`；数的不是容器就是程序错，字符串要数用 `len_str`。
+- **取字典的键用 `$keys`**：`$keys << table << $env nil` 给键组成的一份 `list[str]`，顺序由实现定，
+  所以能接着 `$get_item` 取、能 `$len` 数。不是 dict、或者键不是字面量，都是程序错。
+- **走一遍是自己搭的**：语言里没有循环，枚举一个序列是 `$len` 加 `$get_item`、
+  取 dict 的值是 `$keys` 加 `$get_item`，配起来从头走到尾（`Y` 递归，
+  [`viba-interpreter.md`](../exec/viba-interpreter.md)）。
+- **可以任意嵌套**：`list[dict[str, int]]`、`dict[str, list[$x int]]`。
+- **这三个名字（连 `ListLiteral` / `SetLiteral` / `DictLiteral`）不能拿来定义**：定义名和泛型形参
+  里出现它们，解析器当场拒。它们出现在类型表达式里是「这个容器的居民」，出现在值的位置上是那个容器。
+
+## 9. 函数：结果在前，实参带 tag，提示收尾
+
+```viba
+Distance =
+    int
+  <- $env Environment
+  <- $a int
+  <- $b int
+  <- { how far apart the two were }
+```
+
+- 链的第一个元素是**结果**，然后是实参，按给的顺序排；每个实参带 tag。
+- **一个 tag 只给一次**：tag 是一个参数的名字，同一个名字给两次就是同一个参数又给了一次，报
+  `$viba_program_err`（`was given $a twice`），不是"后来那份算数"。`<<` 上这条更要紧：它是一次次
+  应用，`(a << $name b)` 答出来的很可能是**另一个**函数，所以 `a << $name b << $name c` 里两个
+  `$name` 分属两次调用是合法的 —— 别把一条 `<<` 链摊成"一个函数 + 一张实参表"来按 tag 配。
+  `|`、`*`、`<-` 是同一层的连接，一次连续出现就是一条链，可以摊平；`<<` 每一次都是一个界
+  （[`viba/viba_ast/chain.py`](../viba_ast/chain.py)、[`viba/viba_ast/unparse.py`](../viba_ast/unparse.py)）。
+- **一行放不下就折行**：每个实参占一行，续行以 `<-` / `<<` 起头。可打开的例子：
+  [`tests/data/interpreter/add_demo.viba`](../../tests/data/interpreter/add_demo.viba)、
+  [`tests/data/closure/closure_with_module_call_argument.viba`](../../tests/data/closure/closure_with_module_call_argument.viba)。
+- **实参是表达式时把它括起来**：`$get_v (f << $env args.env)`，不是 `$get_v f << $env args.env`——`<<`
+  比 tag 松，后者会被判成两个实参（先给 `$get_v f`，再给一个位置实参）。**函数体是一次调用时也要括**：
+  `<- (f << $env args.env)`，不然那次调用会被当成又一个参数。
+- **参数的类型给准**：一次运行不核实参的类型（`$a int` 那里放 `"x"` 就照给，谁拿它做整数运算谁
+  在那里崩），拦得住的是判定层 —— 把这份文件当类型判、给一个函数链取实参时要求 `3 <: int`。
+  所以不要用一个说得清的类型去换 `Any`：是 `Any` 就等于说"这里什么都收"，判定层也就帮不上忙。
+- **没有死参数**：一个实参不参与任何判断、不影响结果，就删掉它——看的人会一路找它在哪生效，找不到
+  就是浪费。**唯一例外是 `$env Env`**：它对 interpreter 是规矩（每个要执行的函数都要依赖环境），
+  不是死参数——所以它也不进类型：给一个函数的类型时不要这一个参数，它只出现在链上。
+- **结果不是环境**：`Env` / `Environment` 只出现在参数位置上。只有内建函数给得了一个环境，
+  别的函数在结果那里用它就当场报错；`__impl__ = args.env` 是值，声明是 `Any`。
+- `{...}` 是**提示**：说这一步要干什么。它不是参数，也不被
+  执行——`<<` 会把说明跳过去。所以提示里可以讲清"取哪些字段、怎么比、对不上返回什么"（顺着类型能
+  一路取出字段路径），但不要指望它是代码。
+- **可能会用不上的那个参数，用函数类型 `(T <- $env Environment)`。** 给的是**那个参数的类型**，
+  不是函数：那个参数是惰性的（lazy，non-strict），实参不在这里求值，宿主拿到的是源码里的那次调用，
+  叫了才求——if/else 真正只走一支靠的就是它（见 [`viba-interpreter.md`](../exec/viba-interpreter.md) 的
+  「求值策略：按需求值（call-by-need）」一节）。宿主叫它时可以带上自己的实参
+  （`f(env, 1, 2)`），源码里的那次调用按这些实参走完。只在"确实有分支语义、且实参
+  求值有代价或副作用"时这样用；别的参数按值求值（call-by-value），给它们用函数类型就等于把
+  求值时机的责任推给了每一个宿主函数。想给一个求好的值，用 `builtin.echo` 把它包成"给它一个环境
+  就给出 V"的那个函数。
+
+## 10. 命名、注释、提示说同一件事
+
+- **函数名就是它真正做的事。** 名字、提示、将来的实现三者指向同一个动作；名字叫"拆分"、提示却在
+  说"挂节点"这种相反的事，是错。
+- **注释只讲语义，不要语法絮叨。** 不要留"这是 product 块""head=Object""exponent 链"这类对看的人没有
+  价值的话；注释说的是"这个类型／字段在问题域里是什么"，不是"它在 DSL 里怎么拼"。
+
+## 11. 其它
+
+- **内建名字不用 import。** [`viba/builtin.viba`](../builtin.viba) 对每个模块可见（最低优先级，自己
+  模块的同名定义优先）：`Environment` / `Env`、`Object` / `Oneof` / `nil` / `never` / `Any`、
+  标量 `bool` / `int` / `float` / `str` 与定宽整数 `int8_t` … `uint64_t`、容器名
+  `list` / `set` / `dict`、泛型 `Optional[T]`（就是 `T | nil`，同一个类型写短一点），以及
+  `builtin` 的成员。
+  所以 `Environment` / `Env` 和 `builtin.echo` 都不需要任何 import。
+- **内建库里的模块与泛型，名字也一样可见。** `viba/` 里 `builtin.viba` 旁边那几个模块
+  （`Y.viba`、`apply.viba`、`sub_env_run.viba`、`sequential.viba`、`if.viba`），以及
+  `viba/builtin/` 下的那些泛型
+  （`is_closure/`、`unclosure/`、`sequential_step/`）对每个模块
+  可见，优先级同样最低（自己模块的同名定义、import 优先）：用 `Y << step << …`、
+  `apply << f << args`、`sub_env_run << $sub_env_name "low" << env << f << …`、
+  `if << $env … << $cond c << $t (…) << $f (…)`、
+  `is_closure[add << $a 1].value`、`sequential << $x (…) << $y (…)` 都不用 import，
+  带前缀的 `builtin.sub_env_run` 与 `builtin.is_closure` 叫的是同一个。用 `import` 也照旧。
+- **分支用 `if`。** 条件挑哪一支是运行时的事，所以分支是运行时的一个和，不是提示：`if` 收一个
+  条件与两支（两支都是函数类型的参数），只有条件挑中的那一支被跑过（见
+  [`viba-interpreter.md`](../exec/viba-interpreter.md) 的「分支：用积选择，用和汇合」）。一支是别的文件里
+  的一个步骤、一次还没给环境的调用、或者用 `builtin.echo` 包好的值；一支要好几步，就把它包成一条
+  `sequential` 链 —— viba 没有 `block`，也没有 `lambda: value`，`sequential` 起的就是这两件事的
+  作用，链上那几步在开关给它环境的时候才跑。自己拼两个开关的和只在
+  一支要一直活着、或者要把好几支并起来时才有用。
+- **`builtin` 的成员是内建算子，两种源码形式是同一次调用。** `builtin.add << $env args.env << $x 3 << $y 4`
+  和 `add << $env args.env << $x 3 << $y 4` 叫的是同一个成员：带前缀的是它的全名，不带前缀的那个
+  是它对每个模块可见的短名字。每个成员一张签名，实现跟别的函数一样在宿主手里 —— `get_func` 收到的
+  名字是带前缀的那个（`builtin.add`）。名字说它管哪个类型：`int` 不带后缀，`float` 是 `_f`，
+  `str` 是 `_str`，`bool` 是 `_bool`；`x_to_y` 是从 `x` 换算到 `y`。
+- **内建标量是 `bool` / `int` / `float` / `str`，以及八个定宽整数。** 定宽整数是 `int` 的子类型，
+  每个是它值域里的整数集合：`int8_t` 是 -128 到 127，`uint8_t` 是 0 到 255，`int16_t` 是 -2**15
+  到 2**15 - 1，`uint16_t` 是 0 到 2**16 - 1，`int32_t` 是 -2**31 到 2**31 - 1，`uint32_t` 是 0 到
+  2**32 - 1，`int64_t` 是 -2**63 到 2**63 - 1，`uint64_t` 是 0 到 2**64 - 1。字面量落在范围里才是
+  它的子类型（`127 << int8_t` 成立，`128 << int8_t` 不成立）；`int8_t << int` 成立，反过来不成立。
+  `string` 不是内建名：它什么都解析不到，而且语法层不会报——类型层会（`module_get_type`、
+  `is_sub_type`）。
+- **一份定义一个表达式**，各自一行：没有逗号，也没有语句分隔符。
+- **定义是绑定，不是语句**：viba 是声明式的，求值按需求值（call-by-need）——一个绑定被用到的时候
+  才求值，而且只求值一次，所以源码里的次序不是求值的次序，出现在用之后的定义照样算（见
+  [`viba-interpreter.md`](../exec/viba-interpreter.md) 的「求值策略：按需求值（call-by-need）」一节）。
+- **有 `__impl__` 才是程序**：没有它的文件是类型，不是程序，跑它是错。
+- **模块要收参数就用 `__decl__`**：它是模块当函数判时的整条链，结果在前，参数在后；`$env Env` 至多
+  一个。用不用它，调用时给环境的方式一样：一个 `<<` 给一个环境值；用了，环境就给这个参数，模块体用
+  `args.env` 取；没用，环境不进门，只用来跑这次调用，再缀在这次调用返回的那次调用末尾：
+
+```viba
+__decl__ =
+    int
+  <- $env Env
+  <- $a int
+  <- $b int
+
+args = __get_args__ << __decl__
+```
+
+  调用时每个参数一个 `<<`（`square_sum << args.env << 3 << 4`，或者按 tag 给 `<< $a 3`）。
+  **给了环境就是要执行，那时必须给全**，少一个当场报错；不给环境的话它就是闭包，可以先存下来
+  （`sg = square_sum << $a 3 << $b 4`），以后再 `sg << args.env` 执行。参数不用 `()` 那一套：
+  一个参数都不收的模块，执行就是 `add_demo << args.env`。模块体里 `args.a` 是那个实参，`args.env`
+  是环境。别用 `__decl__` 的参数装"可能有也可能没有"的东西——那些是分支（第 8 条），不是参数。
+
+## 12. 定义给出之后怎么查
+
+语法检查器就是解析器，一次调用：
+
+```python
+from pathlib import Path
+from viba import viba_ast
+
+viba_ast.parse(Path("store.viba").read_text())   # SyntaxError: what is wrong, and which line
+```
+
+语法不认识的字符、没闭合的代码块、拿内建容器当定义名，都会报，而且一定给出行号。类型本身另有一份
+检查（一个积里同一个 tag 不重复、内联链不绕回来）：
+
+```python
+from viba.check_tag_and_inline import check_tag_and_inline
+from viba.viba_type_descriptor import empty_pool, parse_viba_file, pool_add_file
+
+pool = empty_pool()
+file = parse_viba_file(pool, source, "store.viba", "store")
+check_tag_and_inline(pool_add_file(pool, file.ok_value).ok_value)   # Ok(nil), or what is wrong
+```
+
+语言自己的用例是两条命令：
+
+```bash
+python -m viba.parser     # 语法：135 份能编过、15 份必须编不过，外加文档里的例子
+python -m viba.viba_ast   # 打印器输出的源码，再解析回去是同一棵树
+```
+
+## 13. 照着定义一份
+
+这一节给出一份完整的定义，用到本章各节的规矩：叶子、一行不带头、块带头、函数、容器字段。它同样由
+`python -m viba.parser` 检查。
+
+```viba
+UserId = int
+State = "draft" | "live"          # told apart by the value: no tags to give
+
+Parent = nil | $parent_of Node
+
+Index = $by_name dict[str, UserId]
+
+Entry =
+  Object
+  * $name str
+  * $state State
+
+Node =
+  Object
+  * $entry Entry
+  * $parent Parent
+
+Result =
+  Oneof
+  | $ok Entry
+  | $missing UserId
+
+Lookup =
+    Result
+  <- $env Environment
+  <- $id UserId
+  <- { find the entry that id names }
+```
+
+## 提交前自检
+
+- [ ] 这个约束是结构能保证的，还是我又留了一句没人执行的断言？
+- [ ] 这个类型是不是只被用了一次的中间包装（别名、单字段 `Object`、`XxxRequest`）？
+- [ ] 递归结构的 children 是 `list`，还是退化成了单个 `T`？
+- [ ] 叶子是 `list` 的 `nil` 分支，还是我在元素类型上又放了 `| nil`？
+- [ ] 一行有没有多带头？多行块有没有漏头？
+- [ ] `Oneof` / `Object` 用对了，没把单个 `Object` 包进 `Oneof`？
+- [ ] 字段 tag 自解释吗？函数实参都带 tag 吗？
+- [ ] 模块的参数都在 `__decl__` 里了吗（含那个 `$env Env`）？还是把参数藏进了模块名里？调用给全了吗？
+- [ ] 注释有没有混进"这是 product 块"这类语法絮叨？
+- [ ] 这个概念是问题域真实的，还是我臆测的？别名有没有装作它能阻止错填？
+- [ ] 有没有死参数（`$env` 除外）？
+- [ ] 可能会用不上的那个实参，那个参数用函数类型了吗？别的实参有没有被顺手也标上？
+- [ ] 有分支的地方用了 `if` 吗（而不是自己拼两个开关的和）？
+- [ ] 函数名、提示、实现说的是不是同一件事？

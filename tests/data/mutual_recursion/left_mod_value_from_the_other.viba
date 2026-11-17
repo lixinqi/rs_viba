@@ -1,0 +1,11 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import branch
+import right_mod_value_from_the_other as right
+
+x = 41
+__impl__ = right << (args.env.tmp_env << args.env)

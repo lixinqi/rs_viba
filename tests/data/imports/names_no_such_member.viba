@@ -1,0 +1,4 @@
+__decl__ = Any <- $env Env
+
+import design_two as d
+__impl__ = d.nope

@@ -1,0 +1,11 @@
+# main_at_1.viba —— 要跑的是 Y F 1，该得 1（base case 在顶层就走通）
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import fib_module as F
+import Y
+
+__impl__ = Y << F << ($sub_env << args.env << "Y") << $n 1

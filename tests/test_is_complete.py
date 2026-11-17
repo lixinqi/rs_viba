@@ -1,0 +1,457 @@
+"""Tests for is_complete: take the corpora as designs and ask if they are complete.
+
+All viba_data comes from the repo, nothing new is invented:
+
+    data/type_descriptor/case_081/     deep entry (import util as base) + util.viba
+    data/is_sub_type/sub030.viba       recursive Chain = $head int * $tail Chain | nil
+    data/is_sub_type/sup025.viba       X = ...
+
+    python3 tests/test_is_complete.py
+"""
+
+import sys
+import tempfile
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from rs_viba.is_complete import is_complete
+
+DATA = Path(__file__).resolve().parent / "data"
+CASES = DATA / "type_descriptor" / "case_081"
+TYPES = DATA / "is_sub_type"
+
+PASS = FAIL = 0
+
+
+def check(name: str, got, want):
+    global PASS, FAIL
+    if got is want:
+        PASS += 1
+    else:
+        FAIL += 1
+        print(f"FAIL: {name}: expected {want}, got {got}")
+
+
+def source_of(path: Path) -> str:
+    return path.read_text()
+
+
+def entry() -> str:
+    """The deep entry of case_081: import util as base."""
+    return source_of(CASES / "lv1" / "lv2" / "lv3" / "leaf.viba")
+
+
+def main():
+    # Where the dependencies come from: viba_paths, library, or nowhere
+    check("deep entry + viba_paths", is_complete(entry(), [], [str(CASES)], set()), True)
+    check("deep entry, no dependencies",
+          is_complete(entry(), [], [], set()), False)
+    check("deep entry, dependencies through library",
+          is_complete(entry(), [("util.viba", source_of(CASES / "util.viba"))], [], set()), True)
+
+    # A design with documentation blocks: the terminators are the caller's words
+    demo = ("Note[T] = $text T\n"
+            "Report = Object * $len Note[int] * $check Checked[{len under 50}]\n")
+    stops = {"Note", "Checked"}
+    check("a design with a hint block, no terminators",
+          is_complete(demo, [], [], set()), False)
+    check("the same design with the caller's terminators",
+          is_complete(demo, [], [], stops), True)
+    check("only one of them (the wrapper over the hint block is still there)",
+          is_complete(demo, [], [], {"Note"}), False)
+
+    # A fixed-width integer is a leaf: the value's range is the type's business
+    check("a fixed-width integer", is_complete("X = uint8_t", [], [], set()), True)
+    check("a product of fixed-width integers",
+          is_complete("X = Object * $a int8_t * $b uint64_t", [], [], set()), True)
+    check("a fixed-width integer is no definition",
+          is_complete("X = $a uint8_t * $b Missing", [], [], set()), False)
+
+    # Recursive definitions: coinduction lets them through
+    check("recursive Chain", is_complete(source_of(TYPES / "sub030.viba"), [], [], set()), True)
+
+    # Ellipsis: incomplete by default, ends a walk once it is a terminator
+    ellipsis = source_of(TYPES / "sup025.viba")
+    check("ellipsis, no terminators", is_complete(ellipsis, [], [], set()), False)
+    check("ellipsis + \"...\"", is_complete(ellipsis, [], [], {"..."}), True)
+
+    # A call in the source is a chain too: the head has to be something to call
+    add = "add = int <- $env Env <- $a int <- $b int\n"
+    check("a call in the source, finished", is_complete(add + "X = add << $env Env << $a 1 << $b 2\n",
+                                                 [], [], set()), True)
+    check("a call in the source, still owing an argument",
+          is_complete(add + "X = add << $env Env << $a 1\n", [], [], set()), True)
+    check("a call whose head is a name that does not resolve",
+          is_complete("X = missing << $a 1\n", [], [], set()), False)
+    check("a call whose head is a number",
+          is_complete("X = 1 << $a 1\n", [], [], set()), False)
+    check("a call whose argument is not complete",
+          is_complete(add + "X = add << $env Env << $a missing\n", [], [], set()), False)
+
+    # A name that does not resolve: no terminator can rescue it
+    broken = "X = $a Missing\n"
+    check("unresolved reference", is_complete(broken, [], [], set()), False)
+    check("unresolved reference + \"...\"", is_complete(broken, [], [], {"..."}), False)
+
+    # Edges: an entry that does not compile, and an empty one
+    check("entry does not compile", is_complete("X = ", [], [], set()), False)
+    check("empty file", is_complete("", [], [], set()), True)
+    check("a lexical error is a compile error",
+          is_complete("X = A @ B", [], [], set()), False)
+    check("an unterminated hint block is a compile error",
+          is_complete("X = {never closed", [], [], set()), False)
+    check("a source with CRLF",
+          is_complete("X =\r\n  int\r\n", [], [], set()), True)
+    check("a byte-order mark is a compile error",
+          is_complete("\ufeffX = int", [], [], set()), False)
+
+    corners()
+    sums()
+
+    print(f"is_complete: {PASS} passed, {FAIL} failed")
+    return 1 if FAIL else 0
+
+
+def sums():
+    """和的可选项摊开：嵌套的、隔着定义的、隔着泛型的、隔着导入的。"""
+    same = set()
+    # Depth: a name or a tag that repeats anywhere in the flattened options.
+    check("deep, all names of their own",
+          is_complete("X = int | (str | (bool | float))\n", [], [], same), True)
+    check("deep, a name repeats at the bottom",
+          is_complete("X = int | (str | (bool | int))\n", [], [], same), False)
+    check("deep, a tag repeats at the bottom",
+          is_complete("X = $a int | ($b str | ($c bool | $a float))\n", [], [], same),
+          False)
+    check("deep, every tag of its own",
+          is_complete("X = $a int | ($b str | ($c bool | $d float))\n", [], [], same),
+          True)
+    check("deep, a name repeats through two sums",
+          is_complete("X = int | ((str | int) | bool)\n", [], [], same), False)
+
+    # Through definitions, one and two jumps away.
+    check("through two definitions",
+          is_complete("A = int | str\nB = $a bool | A\nX = B\n", [], [], same), True)
+    check("a name repeats through two definitions",
+          is_complete("A = int | str\nB = $a bool | A\nX = B | int\n", [], [], same),
+          False)
+    check("a tag repeats through two definitions",
+          is_complete("A = $a int | str\nB = $b bool | A\nX = B | $a float\n",
+                      [], [], same), False)
+    check("a tag repeats through a name",
+          is_complete("A = $a str\nX = $a int | (A | $b bool)\n", [], [], same), False)
+
+    # Through generic applications: a parameter stands for its argument, and the
+    # names inside are the ones that were written there.
+    check("through a generic with a parameter",
+          is_complete("Inner[T] = list[T] | dict[str, T]\nX = $a bool | Inner[int]\n",
+                      [], [], same), True)
+    check("a name repeats through a generic",
+          is_complete("Inner[T] = list[T] | list[str]\nX = $a bool | Inner[int]\n",
+                      [], [], same), False)
+    check("a name repeats between a generic and the sum it sits in",
+          is_complete("Inner[T] = list[T] | dict[str, T]\nX = list[bool] | Inner[int]\n",
+                      [], [], same), False)
+
+    # Units are no options, wherever they stand.
+    check("units in a nested sum",
+          is_complete("X = int | (nil | str)\n", [], [], same), True)
+    check("a tag repeats across a unit",
+          is_complete("X = $a int | (nil | $a str)\n", [], [], same), False)
+    check("a nested sum of units only",
+          is_complete("X = int | (Oneof | never)\n", [], [], same), True)
+    check("a name that stands for a unit",
+          is_complete("A = nil\nX = int | (A | $a str)\n", [], [], same), True)
+
+    # Two nested sums side by side are collected together.
+    check("two nested sums, every name of its own",
+          is_complete("X = (int | $a str) | ($b bool | $c float)\n", [], [], same),
+          True)
+    check("two nested sums, one name in both",
+          is_complete("X = (int | str) | (int | bool)\n", [], [], same), False)
+    check("two nested sums, one tag in both",
+          is_complete("X = $a int | (str | $a bool)\n", [], [], same), False)
+
+    # A sum that comes back to itself adds no option (the walk is coinductive),
+    # so what it already carried is not counted twice.
+    check("a sum that comes back to itself",
+          is_complete("A = $a int | A\n", [], [], same), True)
+
+    # A sum inside a product is that product's business, not an option of the sum
+    # around it.
+    check("a sum inside a product option",
+          is_complete("X = int | ($a (int | int) * $b str)\n", [], [], same), False)
+    check("a tagged sum inside a product option",
+          is_complete("X = $z int | ($a ($b int | $c str) * $d bool)\n", [], [], same),
+          True)
+    check("a product with a sum inside, as a name",
+          is_complete("A = (int | str) * $x int\nX = $a bool | A\n", [], [], same), True)
+
+    # Through an import: the options are read in the module the sum is written in.
+    util = "Sum = list[int] | dict[str, bool]\n"
+    check("a name repeats across an import",
+          is_complete("import util\nX = list[bool] | util.Sum\n",
+                      [("util.viba", util)], [], same), False)
+    check("every name of its own across an import",
+          is_complete("import util\nX = $a bool | util.Sum\n",
+                      [("util.viba", util)], [], same), True)
+    check("a tag repeats across an import",
+          is_complete("import util\nX = $a bool | util.Two\n",
+                      [("util.viba", "Two = $a int | str\n")], [], same), False)
+
+    # Through a member taken on an application: the definition the decision
+    # chose is what the option stands for.
+    with tempfile.TemporaryDirectory() as directory:
+        generic = Path(directory) / "answer_is_a_sum"
+        generic.mkdir()
+        (generic / "__generic__.viba").write_text("")
+        (generic / "100.viba").write_text(
+            "pattern T\n\nanswer = Oneof | list[T] | dict[str, bool]\n")
+        check("a name repeats across a member of an application",
+              is_complete("import answer_is_a_sum as g\nX = list[int] | g[bool].answer\n",
+                          [], [directory], same), False)
+        check("every name of its own across that member",
+              is_complete("import answer_is_a_sum as g\nX = $a int | g[bool].answer\n",
+                          [], [directory], same), True)
+        check("the member on its own",
+              is_complete("import answer_is_a_sum as g\nX = g[bool].answer\n",
+                          [], [directory], same), True)
+
+    # ... and a decision whose `__decl__` is a sum: the body it chose is the
+    # option, flattened like a sum written in place.
+    with tempfile.TemporaryDirectory() as directory:
+        generic = Path(directory) / "decl_is_a_sum"
+        generic.mkdir()
+        (generic / "__generic__.viba").write_text("")
+        (generic / "100.viba").write_text(
+            "pattern T\n\n__decl__ = Oneof | $a T | list[bool]\n")
+        check("a tag repeats across a decision",
+              is_complete("import decl_is_a_sum as g\nX = $a int | g[int]\n",
+                          [], [directory], same), False)
+        check("every tag of its own across that decision",
+              is_complete("import decl_is_a_sum as g\nX = $b int | g[int]\n",
+                          [], [directory], same), True)
+        check("a name repeats across that decision",
+              is_complete("import decl_is_a_sum as g\nX = list[int] | g[int]\n",
+                          [], [directory], same), False)
+        check("the decision on its own",
+              is_complete("import decl_is_a_sum as g\nX = g[int]\n",
+                          [], [directory], same), True)
+
+
+def corners():
+    """边角：顶类型、内建定义、终结符、泛型实参、依赖从哪来。"""
+    # The top type has no members, and no leaf takes one out of it either — unlike
+    # never, which admits no viba_data at all. So a design resting on it does
+    # not walk through.
+    check("Any alone", is_complete("X = Any", [], [], set()), False)
+    check("Any as a member", is_complete("X = int * Any", [], [], set()), False)
+    check("Any under a container", is_complete("X = list[Any]", [], [], set()), False)
+
+    # Builtin definitions count: builtin.viba's own names resolve too.
+    check("a builtin definition behind a member",
+          is_complete("X = $env Environment", [], [], set()), True)
+    check("a design carrying a doc block, behind a member",
+          is_complete("Block[T] = $text T * $note {what it means}\nX = $b Block[int]\n",
+                      [], [], set()), False)
+
+    # A hint block ends a walk only when the name wrapped around it is a
+    # terminator, and the terminator is asked about the application.
+    check("Hint without the terminator",
+          is_complete("X = Hint[$python_code {a}]", [], [], set()), False)
+    check("Hint with the terminator",
+          is_complete("X = Hint[$python_code {a}]", [], [], {"Hint"}), True)
+    check("Predicate without the terminator",
+          is_complete("X = Predicate[{a}, $python_code {b}]", [], [], set()), False)
+    check("Predicate with the terminator",
+          is_complete("X = Predicate[{a}, $python_code {b}]", [], [], {"Predicate"}), True)
+
+    # A generic parameter is walked through the argument an application binds
+    # it to; unbound, it is a placeholder and decides nothing.
+    check("an unbound parameter alone", is_complete("W[T] = T\n", [], [], set()), True)
+    check("a parameter bound to a leaf",
+          is_complete("W[T] = T\nA = W[int]\n", [], [], set()), True)
+    check("a parameter bound to a hint block",
+          is_complete("W[T] = T\nA = W[{code}]\n", [], [], set()), False)
+    check("a parameter bound behind a member",
+          is_complete("W[T] = $a T\nA = W[int]\nW2[T] = $b T\n", [], [], set()), True)
+    check("too many arguments",
+          is_complete("W[T] = T\nA = W[int, str]\n", [], [], set()), False)
+    check("too few arguments",
+          is_complete("W[T, U] = T * U\nA = W[int]\n", [], [], set()), False)
+
+    # A tag whose symbol is a generic parameter is a placeholder the same way:
+    # which tag the type carries arrives with the argument, so the tag decides
+    # nothing here and what it marks is what gets walked.
+    mesh = ("ArrangedMesh[tag_name] =\n"
+            "    Object\n"
+            "    # Number of participants on this mesh.\n"
+            "  * $size tagged[tag_name, int]\n")
+    check("a tag standing for an unbound parameter",
+          is_complete(mesh, [], [], set()), True)
+    check("the same tag, applied to a string",
+          is_complete(mesh + 'X = ArrangedMesh["peers"]\n', [], [], set()), True)
+    check("the same tag, applied to a hint block",
+          is_complete(mesh + "X = ArrangedMesh[{peers}]\n", [], [], set()), False)
+    check("a placeholder tag passed through another generic",
+          is_complete(mesh + "Group[tag_name] = Object * $g ArrangedMesh[tag_name]\n",
+                      [], [], set()), True)
+    check("what a placeholder tag marks is still walked",
+          is_complete("M[s] = tagged[s, Missing]\n", [], [], set()), False)
+    check("a member tag with an unbound symbol",
+          is_complete("M[s] = tagged[s]\n", [], [], set()), True)
+    check("a symbol that names no string",
+          is_complete("Name = int\nM = tagged[Name, int]\n", [], [], set()), False)
+
+    # A sum's options are told apart by the kind of the value or by a tag: an
+    # untagged option is allowed where its name is its own, a shared name needs
+    # a tag on each of them, and a nested sum is decided with the sum it sits in.
+    check("a sum with no tags", is_complete("X = int | str\n", [], [], set()), True)
+    check("a sum whose options all carry a tag",
+          is_complete("X = $a int | $b str\n", [], [], set()), True)
+    check("a sum that tags one option and not the next",
+          is_complete("X = $a int | str\n", [], [], set()), True)
+    check("a tagged sum with the unit as its head",
+          is_complete("X = Oneof | $a int | $b str\n", [], [], set()), True)
+    check("a tagged sum in block form",
+          is_complete("Result =\n  Oneof\n  | $ok int\n  | $missing str\n",
+                      [], [], set()), True)
+    check("the same block form with one untagged option",
+          is_complete("Result =\n  Oneof\n  | $ok int\n  | str\n", [], [], set()),
+          True)
+    check("an untagged sum behind a member",
+          is_complete("X = $xs (int | str)\n", [], [], set()), True)
+    check("one tagged option behind a member",
+          is_complete("X = $xs ($a int | str)\n", [], [], set()), True)
+    check("two options of one name, neither tagged",
+          is_complete("X = int | int\n", [], [], set()), False)
+    check("two options of one name, both tagged",
+          is_complete("X = $a int | $b int\n", [], [], set()), True)
+    check("two containers of one name, neither tagged",
+          is_complete("X = list[str] | list[int]\n", [], [], set()), False)
+    check("two containers of one name, both tagged",
+          is_complete("X = $a list[str] | $b list[int]\n", [], [], set()), True)
+    check("two containers of different names",
+          is_complete("X = list[int] | dict[str, int]\n", [], [], set()), True)
+    check("two literals are told apart by their value",
+          is_complete('X = "a" | "b"\n', [], [], set()), True)
+    check("two truth values too",
+          is_complete("X = true | false\n", [], [], set()), True)
+    check("two literals of different kinds",
+          is_complete('X = "a" | 7\n', [], [], set()), True)
+    check("the same literal twice",
+          is_complete("X = 7 | 7\n", [], [], set()), False)
+    check("the same name reached through a definition",
+          is_complete("A = int\nX = A | int\n", [], [], set()), False)
+    check("one of two of a name tagged",
+          is_complete("X = $a int | int\n", [], [], set()), False)
+    check("the same tag in two options",
+          is_complete("X = $a int | $a str\n", [], [], set()), False)
+    check("a generic parameter as an option on its own",
+          is_complete("M[T] = T | int\n", [], [], set()), False)
+    check("the same parameter with a tag",
+          is_complete("M[T] = $a T | $b int\n", [], [], set()), True)
+    check("a parameter under a container",
+          is_complete("M[T] = list[T] | int\n", [], [], set()), True)
+    check("a nested sum is decided with the sum it sits in",
+          is_complete("X = $a int | ($b str | $c bool)\n", [], [], set()), True)
+    check("a tag repeated across the nesting",
+          is_complete("X = $a int | ($b str | $a bool)\n", [], [], set()), False)
+    check("a name repeated across the nesting",
+          is_complete("X = $a int | ($b str | int)\n", [], [], set()), False)
+    check("a nested sum with no tags at all",
+          is_complete("X = int | (str | bool)\n", [], [], set()), True)
+    check("a repeated name inside a sum reached through a name",
+          is_complete("A = list[int] | list[str]\nX = $a bool | A\n", [], [], set()),
+          False)
+    check("a tagged nested sum is one option",
+          is_complete("X = $a ($b int | $c str)\n", [], [], set()), True)
+    check("two products, no name between them",
+          is_complete("X = (int * $a int) | (str * $b int)\n", [], [], set()), True)
+    check("nil is no option of the count",
+          is_complete("List = $head int * $tail List | nil\n", [], [], set()), True)
+    check("a tagged option and nil",
+          is_complete("A2 = $x A2 | nil\nX = A2\n", [], [], set()), True)
+    check("a tagged option and never",
+          is_complete("X = $a int | never\n", [], [], set()), True)
+
+    # A dependency that does not compile is skipped; the name it would have
+    # defined then does not resolve.
+    entry = "import util\nX = util.M\n"
+    check("a dependency that does not compile",
+          is_complete(entry, [("util.viba", "M = ")], [], set()), False)
+    check("a library directory that is not there",
+          is_complete(entry, [], ["/no/such/directory"], set()), False)
+    check("the first library entry keeps the module name",
+          is_complete(entry, [("util.viba", "M = int\n"),
+                              ("util.viba", "M = {code}\n")], [], set()), True)
+
+    # A dotted module name is the path under the directory, and a dotted
+    # import binds its whole name (`import pkg.mod` binds `pkg.mod`).
+    with tempfile.TemporaryDirectory() as directory:
+        package = Path(directory) / "pkg"
+        package.mkdir()
+        (package / "mod.viba").write_text("M = int\n")
+        check("a dotted import with no alias",
+              is_complete("import pkg.mod\nX = pkg.mod.M\n", [], [directory], set()), True)
+        check("a dotted import with an alias",
+              is_complete("import pkg.mod as m\nX = m.M\n", [], [directory], set()), True)
+        check("a dotted name through the parent module",
+              is_complete("import pkg\nX = pkg.mod.M\n", [], [directory], set()), True)
+        check("a dotted name that is not there",
+              is_complete("import pkg\nX = pkg.mod.Nope\n", [], [directory], set()), False)
+        check("the same directory twice",
+              is_complete("import pkg.mod\nX = pkg.mod.M\n", [], [directory, directory], set()),
+              True)
+
+    # A terminator may be a plain name, not only an application.
+    check("a name as a terminator", is_complete("X = Foo", [], [], {"Foo"}), True)
+    check("and the same name without it", is_complete("X = Foo", [], [], set()), False)
+
+    # Arguments to a definition that has no parameters: no parameter to bind.
+    check("arguments to a plain definition",
+          is_complete("Box = int\nA = Box[int]\n", [], [], set()), False)
+
+    # The builtin library walks like any other design, and its definitions may
+    # name each other (Environment recurses through its own members).
+    check("a builtin that is complete", is_complete("X = Environment", [], [], set()), True)
+    check("the same builtin behind a member",
+          is_complete("X = $env Environment", [], [], set()), True)
+
+    # The entry's own file name is taken, so a library file under that name is
+    # skipped and the entry still walks through.
+    check("a library file that takes the entry's name",
+          is_complete("X = int\n", [("entry.viba", "Y = str\n")], [], set()), True)
+
+    # A directory named like a module: loading it fails, so the module is not
+    # there (and the walk says so instead of crashing).
+    with tempfile.TemporaryDirectory() as directory:
+        (Path(directory) / "pkg.viba").mkdir()
+        check("a directory where a module should be",
+              is_complete("import pkg\nX = pkg.M\n", [], [directory], set()), False)
+
+    # The chain helper also has to take the binary form the parser builds
+    # before canonicalisation (nothing walks those through the entry).
+    from rs_viba import viba_ast as nodes
+    from rs_viba.is_complete import _chain_elements
+
+    binary = nodes.Product(
+        nodes.Product(nodes.TypeRef("A"), nodes.TypeRef("B")), nodes.TypeRef("C"))
+    same_names = [n.name for n in _chain_elements(binary)]
+    check(f"a binary product flattens in order ({same_names})",
+          same_names == ["A", "B", "C"], True)
+    # A right-nested run is a branch, not part of the main chain: the walk
+    # counts it as one element, the way the chain form keeps it.
+    binary_sum = nodes.Sum(nodes.TypeRef("A"), nodes.Sum(nodes.TypeRef("B"), nodes.TypeRef("C")))
+    sum_elements = _chain_elements(binary_sum)
+    check("a right-nested sum stays a branch",
+          len(sum_elements) == 2 and isinstance(sum_elements[1], nodes.Sum), True)
+    binary_exp = nodes.Exponent(
+        nodes.Exponent(nodes.TypeRef("A"), nodes.TypeRef("B")), nodes.TypeRef("C"))
+    check("a binary exponent flattens", len(_chain_elements(binary_exp)) == 3, True)
+    check("anything else has no chain", _chain_elements(nodes.TypeRef("A")) is None, True)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

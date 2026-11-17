@@ -1,0 +1,7 @@
+import util
+
+Config0 =
+  Object
+  * $peer util.Bundle0
+
+Bundle1 = str * (int | nil)

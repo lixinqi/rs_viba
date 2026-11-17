@@ -1,0 +1,12 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+f =
+	int
+	<- Environment
+	<- $x int
+	<- { inline }
+__impl__ = f << args.env << $x 1

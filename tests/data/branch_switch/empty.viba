@@ -1,0 +1,8 @@
+# A file with the empty argument given.
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+__impl__ = 5

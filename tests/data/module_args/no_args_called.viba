@@ -1,0 +1,8 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import no_args_module
+__impl__ = no_args_module << (args.env.tmp_env << args.env)

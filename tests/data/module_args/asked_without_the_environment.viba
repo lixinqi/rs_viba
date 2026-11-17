@@ -1,0 +1,4 @@
+__decl__ = int <- $env Env
+
+import square_sum
+__impl__ = square_sum

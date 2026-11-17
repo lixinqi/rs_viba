@@ -1,0 +1,19 @@
+__decl__ =
+    Any
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import branch
+import pick as pick
+
+# 两个半成品各自补完，再把两个结果加在一起。
+left = pick.add << $a 1
+right = pick.add << $a 2
+__impl__ =
+    branch.echo_or_never
+    << $env args.env << $cond true
+    << $get_v (pick.add
+        << $env args.env
+        << $a (left << $b 3 << $env args.env)
+        << $b (right << $b 4 << $env args.env))

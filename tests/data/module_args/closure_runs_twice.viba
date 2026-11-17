@@ -1,0 +1,21 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import square_sum
+
+add =
+    int
+  <- $env Env
+  <- $a int
+  <- $b int
+  <- { add the two }
+
+sg = square_sum << 3 << 4
+first = sg << (args.env.tmp_env << args.env)
+__impl__ = add
+  << (args.env.tmp_env << args.env)
+  << $a first
+  << $b (sg << (args.env.tmp_env << args.env))

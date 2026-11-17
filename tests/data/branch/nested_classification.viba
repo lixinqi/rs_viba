@@ -1,0 +1,32 @@
+__decl__ =
+    Any
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import branch
+
+foo =
+    int <- $env Env <- { the case's value }
+ge =
+    bool <- $env Env <- $x int <- $y int <- { x >= y }
+pick_high =
+    str <- $env Env <- { the answer when a is high }
+pick_nonnegative =
+    str <- $env Env <- { the answer when a is high and not negative }
+pick_negative =
+    str <- $env Env <- { the answer when a is neither }
+
+a = foo << $env args.env
+high = ge << $env args.env << $x a << $y 10
+nonnegative = ge << $env args.env << $x a << $y 0
+
+# 选中的那一支里还有一个开关：内层的结果当外层那一支的值。
+nonnegative_or_negative =
+  Oneof
+  | (branch.echo_or_never << $env args.env << $cond nonnegative << $get_v pick_nonnegative)
+  | (branch.never_or_echo << $env args.env << $cond nonnegative << $get_v pick_negative)
+__impl__ =
+  Oneof
+  | (branch.echo_or_never << $env args.env << $cond high << $get_v pick_high)
+  | (branch.never_or_echo << $env args.env << $cond high << $get_v (builtin.echo << $x nonnegative_or_negative))

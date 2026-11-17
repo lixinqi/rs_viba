@@ -1,0 +1,30 @@
+# branch.viba — the two switches that make if/else.
+#
+# Each switch takes the branch value and applies an internal product selector:
+# the identity keeps it (nil * value = value), while never eliminates it
+# (never * value = never). The surrounding sum then drops the eliminated branch.
+#
+# The branch value's slot is `CalledByNeed[Any]`, so `interpret` does not compute
+# it up front: it hands the host something it calls only on the branch it takes.
+# That is what makes this if/else and not "compute both, then drop one" — while
+# the environment and the condition, being ordinary slots, are given as usual.
+
+# Condition holds: nil * v = v — and v is computed.
+# Condition does not hold: never * v = never — and v is never computed.
+# The same two switches, with the branch value handed over as a function instead:
+# `$get_v (Any <- Environment)` is one the host runs itself, in an environment it
+# picks — `branch.py` hands it a child of the environment it was given, so the
+# branch that is taken runs under a path of its own.
+echo_or_never =
+    Any
+  <- $env Env
+  <- $cond bool
+  <- $get_v (Any <- $env Env)
+  <- { run get_v in its own child environment when cond holds, else never }
+
+never_or_echo =
+    Any
+  <- $env Env
+  <- $cond bool
+  <- $get_v (Any <- $env Env)
+  <- { run get_v in its own child environment when cond does not hold, else never }

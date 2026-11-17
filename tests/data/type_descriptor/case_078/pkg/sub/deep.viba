@@ -1,0 +1,12 @@
+import util
+
+Bundle0 =
+  Object
+  * $count int
+  * $label str
+
+Bundle1 =
+  Object
+  * $peer util.Bundle1
+
+Plan2 = int * str

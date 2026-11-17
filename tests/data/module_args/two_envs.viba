@@ -1,0 +1,7 @@
+# __decl__ 里两个 $env 参数：一次调用只有一个环境。
+__decl__ =
+    int
+  <- $env Env
+  <- $env Env
+
+__impl__ = 1

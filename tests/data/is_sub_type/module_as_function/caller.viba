@@ -1,0 +1,16 @@
+__decl__ =
+    Any
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import program as program
+import design_only
+import env_answer
+import env_answer_function
+Program = program << $env args.env
+Half = program.add << $env args.env << $a 1
+Dotted = design_only.Only
+NotAProgram = design_only << $env args.env
+EnvAnswer = env_answer << $env args.env
+EnvAnswerFunction = env_answer_function.env_of << $env args.env

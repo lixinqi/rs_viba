@@ -1,0 +1,11 @@
+# 函数定义里的 $env 参数必须落成 Env：类型给错当场报错。
+f =
+    int
+  <- $env int
+  <- { answer one }
+
+__decl__ = int <- $env Env
+
+args = __get_args__ << __decl__
+
+__impl__ = f << $env args.env

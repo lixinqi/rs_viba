@@ -1,0 +1,7 @@
+# 被调的模块把 $env 那个参数落成了 int。
+__decl__ = int <- $env Env
+
+args = __get_args__ << __decl__
+
+import env_not_env
+__impl__ = env_not_env << (args.env.tmp_env << args.env)

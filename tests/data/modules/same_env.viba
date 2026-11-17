@@ -1,0 +1,8 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import lib as lib
+__impl__ = lib << args.env

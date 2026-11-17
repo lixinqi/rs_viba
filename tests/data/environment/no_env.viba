@@ -1,0 +1,4 @@
+__decl__ = int <- $env Env
+
+double = int <- $a int <- { double it }
+__impl__ = double << $a 21

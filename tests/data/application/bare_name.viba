@@ -1,0 +1,5 @@
+__decl__ = int <- $env Env
+
+import arithmetic as arithmetic
+
+__impl__ = arithmetic.add

@@ -1,0 +1,5 @@
+__decl__ = int <- $env Env
+
+import right
+x = right.y
+__impl__ = x

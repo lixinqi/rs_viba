@@ -1,0 +1,8 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import shared as r
+__impl__ = r << (args.env.sub_env << args.env << "r")

@@ -1,0 +1,16 @@
+Bundle0 =
+  Object
+  * $count int
+  * $label str
+
+Plan1 =
+  Object
+  * $items list[int]
+  * $seen set[str]
+  * $table dict[str, int]
+  * $maybe (int | nil)
+
+Bundle2 =
+  Object
+  * $ghost Missing
+  * $mix list[Missing]

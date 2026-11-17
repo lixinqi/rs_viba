@@ -1,0 +1,19 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+ask_nothing =
+    int
+  <- $env Env
+  <- $get_a (int <- $env Env)
+  <- $get_b (int <- $env Env)
+  <- { answer zero, asking for neither argument }
+
+tick =
+    int <- $env Env <- { one }
+tock =
+    int <- $env Env <- { the other }
+
+__impl__ = ask_nothing << $env args.env << $get_a (tick << $env args.env) << $get_b (tock << $env args.env)

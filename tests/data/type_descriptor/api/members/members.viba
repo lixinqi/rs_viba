@@ -1,0 +1,12 @@
+Members =
+  Object
+  * $items list[int]
+  * $seen set[str]
+  * $table dict[str, int]
+  * $maybe (int | nil)
+  * $pair (int, str)
+  * $inline (int | str)
+  * $lit 42
+  * $code {hello}
+  * $fn (int <- str)
+  * $top Any

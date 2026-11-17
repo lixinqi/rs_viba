@@ -1,0 +1,5 @@
+import broken.marker_broken as g
+
+__decl__ = Any <- $env Env
+
+__impl__ = g[bool]

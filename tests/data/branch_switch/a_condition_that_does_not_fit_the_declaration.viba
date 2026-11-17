@@ -1,0 +1,22 @@
+__decl__ =
+    Any
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import branch
+import kinds as kinds
+
+# `$cond` 那一格源码里是 bool，给一个算出来的 int：程序给错了。
+__impl__ =
+    Oneof
+  | (
+      branch.echo_or_never
+      << $env args.env << $cond (kinds.answer_int << $env args.env)
+      << $get_v (builtin.echo << $x 7)
+    )
+  | (
+      branch.never_or_echo
+      << $env args.env << $cond (kinds.answer_int << $env args.env)
+      << $get_v (builtin.echo << $x 0)
+    )

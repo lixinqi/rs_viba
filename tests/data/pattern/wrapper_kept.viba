@@ -1,0 +1,18 @@
+import demo.wrapper as wrapper
+
+__decl__ =
+    Any
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+inc =
+    int
+  <- $env Env
+  <- $x int
+  <- { add one }
+
+# 还欠着实参积的那次调用存成一个名字，之后再给：存下来的还是这次调用。
+kept = wrapper << inc
+
+__impl__ = kept << $x 1 << args.env

@@ -1,0 +1,213 @@
+"""Y 组合子（这里用的是内建的 `Y`）：一步交给它，它把"往下那一层怎么算"交给这一步自己。
+
+Y 与 y_helper 是**内建**的：`viba/Y.viba` 与 `viba/y_helper.viba` 就在内建词汇那一份旁边，是搜索
+路径的最后一站，所以任何模块给出 `import Y` 就拿到 `Y`（`viba/exec/viba-interpreter.md`）。用例在
+`tests/data/y_combinator/`：
+
+    parts.viba             宿主实现的几步：lt / sub / add
+    fib_module.viba        F：一步 fib，`$fib` 是"下一层怎么算"（一个参数）
+    add2_module.viba       另一份 F：`f(n, m)`（两个参数）
+    add3_module.viba       再一份 F：`f(n, m, k)`（三个参数）
+    main.viba              Y F 10，给出 55
+    main_at_1.viba         Y F 1，给出 1（base case 在顶层就走通）
+    main_at_5.viba         Y F 5，给出 5
+    main_in_a_sub_env.viba Y F 10，调用方自己给出一层子环境，给出 55
+    main_two_args.viba     Y F 3 4，给出 7
+    main_three_args.viba   Y F 3 4 5，给出 12
+    helper_by_hand.viba    不用 Y，直接把 helper 用起来，给出 55
+
+`main_*` 与 `helper_by_hand` 是**真正要跑通的**：文件就是函数（`__decl__` 进、`__impl__` 出）。
+递归靠两条：一次还欠着实参（环境、`$n`）的调用本身是一个值，实参给全了它才跑；一条数据路径上只该
+有一次调用。`Y << F` 就是这一步拿到的"往下那一层怎么算"：`Y` 的 `__impl__` 是一次 `y_helper` 调用，
+给出 `$f`（这一步）与 `$y_helper`（`y_helper` 自己）；`y_helper` 往下调时把这两件原样再交一遍
+（`args.y_helper << $f args.f << $y_helper args.y_helper << …`），每一层换的只是环境与这一层的实参。
+Y 与 y_helper 都给出
+`$env Env`：给环境就是执行，所以每一层的数据路径由调用方给出 —— `main_*.viba` 给出
+`args.env.sub_env << args.env << "Y"`（`main_in_a_sub_env.viba` 故意换个名字），`Y.viba` 往下给出
+`"y_helper"`，步文件往下调时给出 `"low"` 那样的名字；步自己那一层只是名字的出处，`y_helper` 用
+`compress_env_path` 把它压成 workspace 旁边一个定长的名字（`viba/exec/viba-interpreter.md`）。这一层的实参接着 `<<` 跟在后面
+（`Y << F << ($sub_env << args.env << "Y") << $n 3 << $m 4`），`Y` 那个给出 `$args ...` 的参数把
+它们收成一份积；**这两个都不是泛型**：不用按参数个数分文件，`apply` 按那份积里有几个成员选
+`apply_impl` 哪一支，`F` 的参数列表有多长，由积里有几个成员说了算。
+
+参数个数不同仍然**各跑一次**：最后那一遍为 1 到 16 每个长度当场给出一份 step 模块（那里只有参数
+个数要紧），跑出来的结果就是那个长度 —— 每个长度都走到 `apply_impl` 对应的一支上。
+
+另外几条是记录，不是目标：一份**要别的文件把实参给它的模块不能当主文件跑**（宿主只给环境，
+没人给出 `$f`、`$n`），所以 `Y.viba`、`y_helper.viba`、`fib_module.viba`、`add2_module.viba`、
+`add3_module.viba` 单独跑只会报那句话；`parts.viba` 只有设计、没有 `__impl__`，本来就不是程序。
+
+    python3 tests/test_interpreter_y_combinator.py
+"""
+
+import sys
+import tempfile
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import branch
+
+from interpreter_support import message_of, stop_tag, Checks, is_ok, value_of
+
+from rs_viba.interpret import (BUILTIN_DIR, Environment, EnvironmentCompute,
+                            EnvironmentStorage, interpret)
+from rs_viba.type import FAILURE_TAG, PROGRAM_ERR_TAG
+
+checks = Checks("interpreter_y_combinator")
+check = checks.check
+
+CASES = Path(__file__).resolve().parent / "data" / "y_combinator"
+REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
+
+# 一个长度跑一次：step 的实参积里有几个成员
+LENGTHS = list(range(1, 17))
+
+
+def host_for():
+    """每一步的实现：比较、减、加，以及 `builtin.echo`。"""
+    def get_func(module_path, func_name):
+        if module_path == "builtin" and func_name == "echo":
+            return lambda env, x: x
+        if func_name == "lt":
+            return lambda env, x, y: x.value < y.value
+        if func_name == "sub":
+            return lambda env, x, y: x.value - y.value
+        if func_name == "add":
+            return lambda env, x, y: x.value + y.value
+        return branch.get_func(module_path, func_name)
+    return get_func
+
+
+def environ_for(store, also=()):
+    """This host: files come from the case directory, the repository (for
+    `branch.viba`), and anything else a check gave for itself."""
+    return Environment(EnvironmentStorage("root", None, str(store)),
+                       EnvironmentCompute(host_for()),
+                       viba_path=":".join([*(str(path) for path in also),
+                                           str(CASES), str(REPOSITORY_ROOT)]))
+
+
+# (文件, 该给出什么)
+ANSWERS = [
+    ("main", 55),
+    ("main_at_1", 1),
+    ("main_at_5", 5),
+    ("main_in_a_sub_env", 55),
+    ("main_two_args", 7),
+    ("main_three_args", 12),
+    ("helper_by_hand", 55),
+]
+
+# (文件, 停在哪种结果, 话里的片段)：记录，不是目标 —— 见上面那段说明
+RECORDED = [
+    (BUILTIN_DIR / "Y.viba", "error", "has no member tagged '$f'"),
+    (BUILTIN_DIR / "y_helper.viba", "error",
+     "has no member tagged '$caller_workspace_relative_path'"),
+    (CASES / "fib_module.viba", "error", "has no member tagged '$n'"),
+    (CASES / "add2_module.viba", "error", "has no member tagged '$n'"),
+    (CASES / "add3_module.viba", "error", "has no member tagged '$n'"),
+    (CASES / "parts.viba", "error", "has no __impl__"),
+]
+
+
+def _a_step_of(length: int) -> str:
+    """A step function of that many parameters, given here.
+
+    Only the parameter count matters to this check: this layer's arguments are
+    given as `<<` links after `args.self`, the product they are collected into
+    has that many members, which is what decides the `apply_impl` branch, and the
+    answer is the first parameter counted down to zero — so the run says which
+    length it started from.
+    """
+    names = [f"n{index}" for index in range(length)]
+    further = [f"$n0 below"] + [f"${name} args.{name}" for name in names[1:]]
+    return "\n".join([
+        f"# given by the test: a step of {length} parameters",
+        "__decl__ =",
+        "    Any",
+        "  <- $env Env",
+        "  <- $self Any",
+    ] + [f"  <- ${name} int" for name in names] + [
+        "",
+        "args = __get_args__ << __decl__",
+        "",
+        "import branch",
+        "import parts as parts",
+        "",
+        "small = parts.lt << $env args.env << $x args.n0 << $y 1",
+        "below = parts.sub << $env args.env << $x args.n0 << $y 1",
+        "low = " + " << ".join(['args.self', '($sub_env << args.env << "low")']
+                                 + further),
+        "__impl__ =",
+        "  Oneof",
+        "  | (branch.echo_or_never << $env args.env << $cond small",
+        "      << $get_v (builtin.echo << $x 0))",
+        "  | (branch.never_or_echo << $env args.env << $cond small",
+        "      << $get_v (parts.add << $env args.env << $x low << $y 1))",
+    ]) + "\n"
+
+
+def _a_main_of(length: int) -> str:
+    """`Y F (<length> 0 … 0)`: the step counts the first parameter down to zero."""
+    given = [f"$n0 {length}"] + [f"$n{index} 0" for index in range(1, length)]
+    return "\n".join([
+        "__decl__ = int <- $env Env",
+        "args = __get_args__ << __decl__",
+        "import step as F",
+        "import Y",
+        "__impl__ = " + " << ".join(["Y", "F", '($sub_env << args.env << "Y")'] + given),
+    ]) + "\n"
+
+
+def _every_length_runs(tmp: Path):
+    """1 到 16 每个长度都跑一次：`apply_impl` 的 16 支没有一支是没人走过的。
+
+    这一层的实参接着 `<<` 跟在后面，`Y` 把它们收成一份积，`apply` 按积里有几个成员选文件；这一遍为
+    每个长度当场给出一份 step 模块（只有参数个数要紧），跑出来的结果就是那个长度。
+    """
+    check((BUILTIN_DIR / "Y.viba").is_file()
+          and (BUILTIN_DIR / "y_helper.viba").is_file(),
+          "Y is one module and the helper is one module: viba/Y.viba, viba/y_helper.viba")
+    for length in LENGTHS:
+        where = tmp / f"length-{length}"
+        where.mkdir()
+        (where / "step.viba").write_text(_a_step_of(length))
+        (where / "main.viba").write_text(_a_main_of(length))
+        result = interpret(str(where / "main.viba"),
+                           environ_for(where / "store", also=[where]))
+        check(is_ok(result) and value_of(result) == length,
+              f"a step of {length} parameters runs, got {result!r}")
+
+
+def run(tmp: Path):
+    _every_length_runs(tmp)
+
+    for index, (name, want) in enumerate(ANSWERS):
+        program = CASES / f"{name}.viba"
+        check(program.is_file(), f"the case is a file: {program.name}")
+        result = interpret(str(program), environ_for(tmp / f"store-{index}"))
+        check(is_ok(result) and value_of(result) == want,
+              f"{name}: Y F that many answers {want}, got {result!r}")
+
+    for index, (program, kind, want) in enumerate(RECORDED):
+        check(program.is_file(), f"the case is a file: {program.name}")
+        result = interpret(str(program), environ_for(tmp / f"record-{index}"))
+        label = program.name
+        if kind == "error":
+            check(stop_tag(result) == PROGRAM_ERR_TAG and want in message_of(result),
+                  f"{label}: recorded stop {want!r}, got {result!r}")
+        elif kind == "failed":
+            check(stop_tag(result) == FAILURE_TAG and want in message_of(result),
+                  f"{label}: recorded stop {want!r}, got {result!r}")
+
+
+if __name__ == "__main__":
+    scratch = Path(tempfile.mkdtemp(prefix="viba-interpreter-y-"))
+    try:
+        run(scratch)
+    finally:
+        for leftover in sorted(scratch.rglob("*"), reverse=True):
+            leftover.unlink() if leftover.is_file() else leftover.rmdir()
+    sys.exit(checks.report())

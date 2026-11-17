@@ -1,0 +1,20 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+add =
+	int
+	<- $env Env
+	<- $a int
+	<- $b int
+	<- { add two integer }
+
+leaf =
+	int
+	<- $env Env
+	<- { answer seven }
+
+half = leaf << $env args.env
+__impl__ = add << $env args.env << $a half << $b half

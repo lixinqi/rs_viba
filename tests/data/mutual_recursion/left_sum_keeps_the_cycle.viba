@@ -1,0 +1,7 @@
+__decl__ = Any <- $env Env
+
+import branch
+import right_sum_keeps_the_cycle as right
+
+x = right.y | 5
+__impl__ = x

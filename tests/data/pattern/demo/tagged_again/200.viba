@@ -1,0 +1,6 @@
+# The same tag, inside the chain it was given in: one `pattern` line, however
+# many positions it takes, and the chain it gives is what tells this file from
+# 100.viba.
+pattern A <- int <- tagged[arg_name, T]
+
+type = A <- int <- tagged[arg_name, T]

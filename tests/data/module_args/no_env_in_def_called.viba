@@ -1,0 +1,7 @@
+# 被调的模块没有声明 $env 参数：环境作为那次调用的规矩给它，实参照给，结果照给。
+__decl__ = int <- $env Env
+
+args = __get_args__ << __decl__
+
+import no_env_in_def
+__impl__ = no_env_in_def << (args.env.tmp_env << args.env) << $a 25

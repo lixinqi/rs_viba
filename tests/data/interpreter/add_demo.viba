@@ -1,0 +1,29 @@
+# file name: add_demo.viba
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+add =
+	int
+	<- $env Env
+	<- $a int
+	<- $b int
+	<- {
+		add two integer
+	}
+
+print =
+	void
+	<- $env Env
+	<- $x Any
+	<- {
+		print to stdout
+	}
+
+__impl__ =
+	add
+	<< $env args.env
+	<< $a 999999
+	<< $b 1

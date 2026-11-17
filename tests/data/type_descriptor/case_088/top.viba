@@ -1,0 +1,7 @@
+import util as up
+
+Bundle0 =
+  Object
+  * $peer up.Bundle0
+
+Node1 = $left int | $right str

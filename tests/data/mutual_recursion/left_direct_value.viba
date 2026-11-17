@@ -1,0 +1,7 @@
+__decl__ = int <- $env Env
+
+import branch
+import right_direct_value as right
+
+x = right.y
+__impl__ = x

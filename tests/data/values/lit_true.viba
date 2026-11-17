@@ -1,0 +1,3 @@
+__decl__ = bool <- $env Env
+
+__impl__ = true

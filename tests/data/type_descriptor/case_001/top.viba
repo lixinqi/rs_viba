@@ -1,0 +1,6 @@
+Plan0 =
+  Object
+  * $ghost Missing
+  * $mix list[Missing]
+
+Bundle1 = int * str

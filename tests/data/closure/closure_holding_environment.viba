@@ -1,0 +1,14 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+takes =
+    int
+  <- $env Env
+  <- $x Environment
+  <- { where that is }
+
+bad = takes << $x (args.env.tmp_env << args.env)
+__impl__ = bad

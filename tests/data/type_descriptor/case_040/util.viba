@@ -1,0 +1,16 @@
+import top
+
+Bundle0 =
+  Object
+  * $peer top.Bundle0
+
+Node1 =
+  Object
+  * $items list[int]
+  * $seen set[str]
+  * $table dict[str, int]
+  * $maybe (int | nil)
+
+Bundle2 = str * (int | nil)
+
+Rule3 = $only int

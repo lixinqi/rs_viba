@@ -1,0 +1,16 @@
+# Giving the first argument by tag is the same thing, and the member's own
+# argument is addressed by its tag as usual.
+__decl__ =
+    Any
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+path_of =
+    str
+  <- $env Env
+  <- $where Environment
+  <- { where that environment lives }
+
+__impl__ = path_of << $env args.env
+           << $where ($sub_env << $env args.env << $sub_env_name "kid")

@@ -1,0 +1,7 @@
+__decl__ = Any <- $env Env
+
+import branch
+import right_mod_call_without_environment as right
+
+x = right << $a 1
+__impl__ = x

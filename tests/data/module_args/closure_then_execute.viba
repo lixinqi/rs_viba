@@ -1,0 +1,9 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import square_sum
+sg = square_sum << 3 << 4
+__impl__ = sg << (args.env.tmp_env << args.env)

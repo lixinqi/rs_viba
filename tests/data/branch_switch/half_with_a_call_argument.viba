@@ -1,0 +1,17 @@
+__decl__ =
+    Any
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import branch as branch
+import pick as pick
+import counters as counters
+
+half = pick.add << $a 40
+
+__impl__ =
+    branch.echo_or_never
+    << $env args.env
+    << $cond true
+    << $get_v (half << $b (counters.tock << $env args.env) << $env args.env)

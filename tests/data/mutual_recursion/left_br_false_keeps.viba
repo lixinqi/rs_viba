@@ -1,0 +1,7 @@
+__decl__ = Any <- $env Env
+
+import branch
+import right_br_false_keeps as right
+
+x = right.y
+__impl__ = x

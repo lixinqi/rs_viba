@@ -1,0 +1,7 @@
+__decl__ = Any <- $env Env
+
+import branch
+import right_br_product_drops as right
+
+x = right.y * 1
+__impl__ = x

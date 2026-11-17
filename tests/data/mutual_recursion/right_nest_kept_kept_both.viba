@@ -1,0 +1,27 @@
+__decl__ =
+    Any
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import branch
+import left_nest_kept_kept_both as left
+
+y =
+    Oneof
+  | (branch.echo_or_never
+      << $env args.env << $cond (true)
+      << $get_v (builtin.echo << $x (
+            Oneof
+            | (
+                branch.echo_or_never
+                << $env args.env << $cond (true)
+                << $get_v (builtin.echo << $x left.x))
+            | (
+                branch.never_or_echo
+                << $env args.env << $cond (true)
+                << $get_v (builtin.echo << $x left.x))
+      )))
+  | (branch.never_or_echo
+      << $env args.env << $cond (true)
+      << $get_v (builtin.echo << $x 42))

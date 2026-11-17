@@ -1,0 +1,7 @@
+import util as m
+
+Report0 = $only int
+
+Bundle1 =
+  Object
+  * $peer m.Node0

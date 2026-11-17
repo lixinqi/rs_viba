@@ -1,0 +1,5 @@
+pattern bool
+
+__decl__ = Any <- $env Env
+
+__impl__ = true

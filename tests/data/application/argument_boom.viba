@@ -1,0 +1,13 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import arithmetic as arithmetic
+
+explode =
+	int
+	<- $env Env
+	<- { go }
+__impl__ = arithmetic.add << $env args.env << $a (explode << $env args.env) << $b 2

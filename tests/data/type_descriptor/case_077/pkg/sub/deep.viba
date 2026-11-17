@@ -1,0 +1,7 @@
+import pkg.sub.deep as m
+
+Bundle0 = $only int
+
+Node1 =
+  Object
+  * $peer m.Bundle0

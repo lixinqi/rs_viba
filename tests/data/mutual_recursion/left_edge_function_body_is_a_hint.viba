@@ -1,0 +1,11 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import branch
+import right_edge_function_body_is_a_hint as right
+
+x = right.f << $env args.env << $a 1
+__impl__ = x

@@ -1,0 +1,16 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+add =
+	int
+	<- $env Env
+	<- $a int
+	<- $b int
+	<- { add two integer }
+import tmp_lib as lib
+__impl__ = add << $env args.env
+  << $a (lib << (args.env.tmp_env << args.env))
+  << $b (lib << (args.env.tmp_env << args.env))

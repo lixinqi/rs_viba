@@ -1,0 +1,7 @@
+import top
+
+Bundle0 =
+  Object
+  * $peer top.Plan1
+
+Plan1 = int * str * bool

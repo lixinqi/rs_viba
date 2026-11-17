@@ -1,0 +1,18 @@
+# 条件不成立：这一支不算（leaf 一次都不跑），和里只剩另一支。
+__decl__ =
+    Any
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import branch
+
+leaf =
+    int
+  <- $env Env
+  <- { 给出一个数 }
+
+__impl__ =
+    Oneof
+  | (branch.echo_or_never << $env args.env << $cond false << $get_v leaf)
+  | 7

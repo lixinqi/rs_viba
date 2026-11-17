@@ -1,0 +1,6 @@
+# The same value, given as the tag itself.
+__decl__ =
+    Any
+  <- $env Env
+
+__impl__ = $a 3

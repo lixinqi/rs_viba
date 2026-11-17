@@ -1,0 +1,213 @@
+# Builtin library — visible from every module, lowest precedence:
+# a custom module's own definitions and environment win.
+#
+# The environment a running module is handed (viba/exec/viba-interpreter.md). As
+# a type, `Env` is an Environment — that is what a module's `$env` parameter
+# asks for; as computation it is the real environment, and a module takes
+# it as `args.env` (with `args = __get_args__ << __decl__`). `Environment` is
+# a plain function of the environment and the sub-environment's name, which is
+# how a module call hands a module its own — `$viba_path` is where its imports
+# are looked up, and a child keeps the parent's — and `$tmp_env` is the same
+# thing under a name nobody chose, fresh every call. Both take the environment
+# as their first argument, so nothing is bound to the environment they came
+# from: `args.env.sub_env << args.env << "child"` is the same call as
+# `$sub_env << args.env << "child"` (viba/exec/viba-interpreter.md).
+#
+# The name `$sub_env` is given may also be the pieces the source has it in, so
+# that a data path can be read back against the code: a product of the strings,
+# names and calls it stands for, joined by `/`. `("step0" * step0_name * Step0)`
+# is the child `step0/a/add` — where the step stands, the tag it carries and the
+# function the call in it names (viba/exec/viba-interpreter.md, the section on `sub_env` names).
+#
+# The members below walk the environment chain a child belongs to: `$get_parent` is the
+# environment this one was made from (`nil` for the root of that chain), `$get_root` is the
+# environment at the top of it (`nil` in, `nil` out), and `$get_relative_path` is
+# a storage path seen from a root (`"b"` for `root/a/b` seen from `root/a`).
+# `$find_by_relative_path` is the way back: a relative path and the root to take
+# it from, and with no root it searches from the environment it came from,
+# which is what `args.env.find_by_relative_path << "a/b"` means. What comes back
+# is one environment, not a chain of environments: the segments name the data path, and no call.
+# `$compress_env_path` is what keeps a recursion's data paths short:
+# given a directory and a path that begins with its own at a name boundary (a
+# directory below it, or one already pressed from it), it answers the path that one
+# stands for, compressed into a single name beside the given directory —
+# `<that path>_<40 hex digits>` — and gives the path it compressed into the
+# answer's `uncompress_relative_path` (`nil` for every other environment). Only the
+# data path is compressed: the environment chain `$get_parent` walks is not, so an environment
+# made this way stands where the path it stands for stands.
+#
+# `$try_compact` is where a module asks the interpreter to keep its own stack from
+# growing: past `$env_chain_length_limit` links in the chain of environments, the
+# calls running now are turned into a work list and made again from there, one at a
+# time (viba/exec/viba-interpreter.md, "栈太长时：把系统栈变成工作清单"). It answers the
+# environment it was given, so a file names it (`env = $try_compact << args.env <<
+# 32`) and uses that name where the environment would have gone — which is also
+# what puts the call in order, before whatever runs at that environment.
+Environment =
+    Object
+  * $viba_path str
+  * $sub_env (Env <- $env Env <- $sub_env_name str)
+  * $tmp_env (Env <- $env Env)
+  * $get_parent ((Env | nil) <- $env Env)
+  * $get_root ((Env | nil) <- $current (Env | nil))
+  * $get_relative_path (str <- $current Env <- $root (Env | nil))
+  * $find_by_relative_path (Env <- $relative_path str <- $root (Env | nil))
+  * $compress_env_path (Env <- $sup Env <- $sub Env)
+  * $try_compact (Env <- $env Env <- $env_chain_length_limit int)
+  * $uncompress_relative_path (str | nil)
+
+Env = Environment
+
+# A value that may be absent: `Optional[T]` is `T | nil`, the same type written
+# the long way. It is a definition like any other, so it unfolds to its body and
+# a module's own `Optional` wins over this one.
+Optional[T] = T | nil
+
+# The error branch of a dispatcher type: what a dispatcher answers when the
+# arguments' types match none of the handlers it was built from. The message
+# says so in one sentence; what was given and what each handler takes stay in
+# the source.
+DispatchError =
+    Object
+  * $dispatch_error_message str
+
+# The builtin module: the operators every module can reach without an
+# import. Each operator is one member of `builtin`, given as a function of the
+# environment and its arguments, and the host implements it under the member's
+# name — `builtin.add` is what `get_func` is asked for.
+#
+# A module may also give that member's own name on its own (`add << $env …`,
+# `concat << $env …`): it is the same member, and the same call. The library is
+# the lowest-precedence stop of every name, so a module's own `add` wins over
+# the builtin one, and so does an import.
+#
+# One name on the left: the operators below are members of it, not definitions of
+# their own.
+#
+# The names are grouped by the type they work on: nothing for `int`, `_f` for
+# `float`, `_str` for `str`, `_bool` for `bool`, so a reader can tell `lt` from
+# `lt_str` and `lt_f`. A name that already says what it does and works on one type
+# stands on its own (`concat`, `split`, `trim`, `substr`), and which type it is
+# about is in its signature. `x_to_y` converts from the type `x` to the type `y`.
+# The block after a signature is what the operator means — the meaning itself is
+# the host's (`viba/exec/viba-interpreter.md`).
+builtin =
+    # Hand back what it receives unchanged: `echo << $x V` answers V given an
+    # environment. The work handed out is computed in the environment and at the
+    # time its receiver decides (branch.py).
+    $echo
+    (
+        $x Any
+      <- $env Env
+      <- $x Any
+      <- { hand the argument back }
+    )
+
+    # The two switches if/else is made of (`viba/if.viba`): the branch value's
+    # slot is a function type, so the call in the source is not computed where it
+    # appears — the switch that is taken runs it, in a child of the environment it
+    # was given. `echo_or_never` answers it when the condition holds and `never`
+    # otherwise; `never_or_echo` the other way round. The sum the two switches
+    # answer on then drops the branch that answered `never` (`never | a = a`).
+  * $echo_or_never
+    (
+        Any
+      <- $env Env
+      <- $cond bool
+      <- $get_v (Any <- $env Env)
+      <- { the branch value when the condition holds, else never }
+    )
+  * $never_or_echo
+    (
+        Any
+      <- $env Env
+      <- $cond bool
+      <- $get_v (Any <- $env Env)
+      <- { the branch value when the condition does not hold, else never }
+    )
+
+    # Arithmetic on int.
+  * $add (int <- $env Env <- $x int <- $y int <- { the sum of x and y })
+  * $sub (int <- $env Env <- $x int <- $y int <- { x minus y })
+  * $mul (int <- $env Env <- $x int <- $y int <- { the product of x and y })
+  * $div (int <- $env Env <- $x int <- $y int <- { x divided by y, rounded down })
+  * $rem (int <- $env Env <- $x int <- $y int <- { the remainder of x divided by y })
+  * $neg (int <- $env Env <- $x int <- { x with the other sign })
+  * $abs (int <- $env Env <- $x int <- { x without its sign })
+  * $min (int <- $env Env <- $x int <- $y int <- { the lesser of x and y })
+  * $max (int <- $env Env <- $x int <- $y int <- { the greater of x and y })
+  * $pow (int <- $env Env <- $x int <- $y int <- { x raised to the power y })
+
+    # Arithmetic on float.
+  * $add_f (float <- $env Env <- $x float <- $y float <- { the sum of x and y })
+  * $sub_f (float <- $env Env <- $x float <- $y float <- { x minus y })
+  * $mul_f (float <- $env Env <- $x float <- $y float <- { the product of x and y })
+  * $div_f (float <- $env Env <- $x float <- $y float <- { x divided by y })
+  * $rem_f (float <- $env Env <- $x float <- $y float <- { the remainder of x divided by y })
+  * $neg_f (float <- $env Env <- $x float <- { x with the other sign })
+  * $abs_f (float <- $env Env <- $x float <- { x without its sign })
+  * $min_f (float <- $env Env <- $x float <- $y float <- { the lesser of x and y })
+  * $max_f (float <- $env Env <- $x float <- $y float <- { the greater of x and y })
+  * $pow_f (float <- $env Env <- $x float <- $y float <- { x raised to the power y })
+
+    # Comparing int.
+  * $lt (bool <- $env Env <- $x int <- $y int <- { x is less than y })
+  * $le (bool <- $env Env <- $x int <- $y int <- { x is less than or equal to y })
+  * $gt (bool <- $env Env <- $x int <- $y int <- { x is greater than y })
+  * $ge (bool <- $env Env <- $x int <- $y int <- { x is greater than or equal to y })
+  * $eq (bool <- $env Env <- $x int <- $y int <- { x equals y })
+  * $ne (bool <- $env Env <- $x int <- $y int <- { x does not equal y })
+
+    # Comparing float.
+  * $lt_f (bool <- $env Env <- $x float <- $y float <- { x is less than y })
+  * $le_f (bool <- $env Env <- $x float <- $y float <- { x is less than or equal to y })
+  * $gt_f (bool <- $env Env <- $x float <- $y float <- { x is greater than y })
+  * $ge_f (bool <- $env Env <- $x float <- $y float <- { x is greater than or equal to y })
+  * $eq_f (bool <- $env Env <- $x float <- $y float <- { x equals y })
+  * $ne_f (bool <- $env Env <- $x float <- $y float <- { x does not equal y })
+
+    # Working on str.
+  * $concat (str <- $env Env <- $x str <- $y str <- { the two strings joined end to end })
+  * $len_str (int <- $env Env <- $x str <- { how many characters the string has })
+  * $upper_str (str <- $env Env <- $x str <- { the string in upper case })
+  * $lower_str (str <- $env Env <- $x str <- { the string in lower case })
+  * $eq_str (bool <- $env Env <- $x str <- $y str <- { the two strings are the same })
+  * $ne_str (bool <- $env Env <- $x str <- $y str <- { the two strings are not the same })
+  * $lt_str (bool <- $env Env <- $x str <- $y str <- { the first string sorts before the second })
+  * $le_str (bool <- $env Env <- $x str <- $y str <- { the first string is not after the second })
+  * $gt_str (bool <- $env Env <- $x str <- $y str <- { the first string sorts after the second })
+  * $ge_str (bool <- $env Env <- $x str <- $y str <- { the first string is not before the second })
+  * $substr (str <- $env Env <- $x str <- $start int <- $end int
+             <- { the characters of x from start up to end, both inside x })
+  * $char_at (str <- $env Env <- $x str <- $at int <- { the character of x at that position })
+  * $find (((int | nil)) <- $env Env <- $x str <- $needle str
+           <- { where needle first appears in x, nil when it does not })
+  * $contains (bool <- $env Env <- $x str <- $needle str <- { x has needle in it somewhere })
+  * $starts_with (bool <- $env Env <- $x str <- $prefix str <- { x begins with prefix })
+  * $ends_with (bool <- $env Env <- $x str <- $suffix str <- { x ends with suffix })
+  * $split (list[str] <- $env Env <- $x str <- $separator str
+            <- { the pieces x is cut into at every separator, the separator not empty })
+  * $join (str <- $env Env <- $parts list[str] <- $separator str
+           <- { the pieces joined end to end, separator between them })
+  * $replace (str <- $env Env <- $x str <- $old str <- $new str
+              <- { x with every old replaced by new, old not empty })
+  * $trim (str <- $env Env <- $x str <- { x without the blank space around it })
+  * $repeat (str <- $env Env <- $x str <- $times int
+             <- { x repeated that many times, times not negative })
+
+    # Logic on bool.
+  * $and (bool <- $env Env <- $x bool <- $y bool <- { true when both are true })
+  * $or (bool <- $env Env <- $x bool <- $y bool <- { true when either is true })
+  * $not (bool <- $env Env <- $x bool <- { the other truth value })
+  * $xor (bool <- $env Env <- $x bool <- $y bool <- { true when exactly one is true })
+  * $eq_bool (bool <- $env Env <- $x bool <- $y bool <- { the two truth values are the same })
+  * $ne_bool (bool <- $env Env <- $x bool <- $y bool <- { the two truth values are not the same })
+
+    # From one type to another.
+  * $int_to_float (float <- $env Env <- $x int <- { x as a float })
+  * $float_to_int (int <- $env Env <- $x float <- { x with its fraction dropped })
+  * $int_to_str (str <- $env Env <- $x int <- { x given in decimal })
+  * $float_to_str (str <- $env Env <- $x float <- { x given as a number })
+  * $bool_to_str (str <- $env Env <- $x bool <- { x given as "true" or "false" })
+  * $str_to_int (int <- $env Env <- $x str <- { the whole number the string has })
+  * $str_to_float (float <- $env Env <- $x str <- { the number the string has })

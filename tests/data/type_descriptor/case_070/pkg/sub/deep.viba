@@ -1,0 +1,14 @@
+import top
+
+Config0 = $only int
+
+Config1 =
+  Object
+  * $peer top.Bundle0
+
+Node2 = $left int | $right str
+
+Bundle3 =
+  Object
+  * $count int
+  * $label str

@@ -1,0 +1,8 @@
+__decl__ =
+    Any
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import design_two as d
+__impl__ = args.env.sub_env

@@ -1,0 +1,2 @@
+# So does a tuple.
+__impl__ = $in << $env nil << (1, 2) << 2

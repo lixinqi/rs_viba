@@ -1,0 +1,13 @@
+import top
+
+Bundle0[T] =
+  $v T
+
+Bundle1 =
+  Object
+  * $ghost Missing
+  * $mix list[Missing]
+
+Report2 =
+  Object
+  * $peer top.Plan2

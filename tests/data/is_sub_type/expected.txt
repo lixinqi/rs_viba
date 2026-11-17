@@ -1,0 +1,160 @@
+000 true
+001 false
+002 false
+003 false
+004 true
+005 true
+006 true
+007 true
+008 false
+009 false
+010 false
+011 false  # was ()<:nil under the old alias rule; () is the empty tuple now
+012 true
+013 true
+014 false
+015 true
+016 false
+017 true
+018 false
+019 true
+020 true
+021 false
+022 false
+023 false
+024 false  # a literal is no resident of the rest marker
+025 false  # a plain type is no resident of the rest marker
+026 false
+027 false  # $arg0 pairs with $arg0: str is no function, so no
+028 false
+029 false
+030 true
+031 true
+032 false
+033 true  # two modules' List have the same body: structural, the module a body stands in is not the type
+034 false
+035 true  # MyList and List unfold into each other (equi-recursive)
+036 true  # two modules' Box have the same body
+037 error  # free-var atoms are gone: unresolvable TypeRef is an Err
+038 error  # unresolvable TypeRef is an Err, names no longer compared
+039 false
+040 false
+041 true
+042 false
+043 true
+044 false
+045 true
+046 true
+047 true
+048 false
+049 true
+050 true
+051 true
+052 true
+053 false
+054 true
+055 true
+056 false
+057 false
+058 true
+059 false
+060 true
+061 true
+062 false
+063 true
+064 true
+065 true
+066 false
+067 true
+068 false
+069 true
+070 true
+071 error  # one product may not have the same tag twice
+072 true  # nil is the unit of product: nil * A == A
+073 true  # a tagged member is a resident of the rest branch
+074 true
+075 true
+076 true
+077 false  # () is the empty tuple, NOT an alias of nil; distinct nodes
+078 false  # nil is not the empty tuple either; cardinality equal only
+079 true
+080 false
+081 true
+082 true
+083 false
+084 true
+085 false
+086 false
+087 true
+088 true
+089 false
+090 true
+091 true
+092 false
+093 true
+094 true
+095 true
+096 false
+097 true
+098 false
+099 true
+100 false
+101 true
+102 true
+103 true
+104 true
+105 true
+106 false
+107 true
+108 true  # nil is the unit: the identity holds both ways
+109 true  # an untagged product member is inlined
+110 true  # and taken back the same way
+111 false  # the inlined tags are the ones that count
+112 error  # the same tag twice, the inline counted
+113 error  # a tag twice at one level is malformed too
+114 true  # inlining runs down the whole chain
+115 true  # a name over the unit is the unit
+116 true  # a member that is no product still pairs by position
+117 error  # a member that inlines itself is malformed
+118 true  # an actual bound to a product is inlined too
+119 true  # recursively
+120 error  # a member that inlines itself has no expansion
+121 error  # an alias closes the same loop
+122 error  # and so do two definitions
+123 error  # a three-definition ring, tags all different
+124 true  # the same type with the chain ending is fine
+125 error  # the untagged member need not be first
+126 true  # a tagged type is a resident of the rest marker
+127 true  # a product type is a resident of the rest marker
+128 true  # a sum whose branches all are is one too
+129 true  # an open type is a resident of an open type
+130 true
+131 false
+132 true
+133 false
+134 true
+135 false
+136 true
+137 false
+138 false
+139 true
+140 true
+141 false
+142 true
+143 false
+144 true
+145 false
+146 false
+147 false
+148 false
+149 false
+150 false
+151 false
+152 true
+153 true
+154 false
+155 true
+156 true
+157 true
+158 true
+159 false

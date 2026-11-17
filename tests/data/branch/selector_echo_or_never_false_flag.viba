@@ -1,0 +1,12 @@
+__decl__ =
+    Any
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import branch
+
+__impl__ =
+  branch.echo_or_never
+  << $env args.env << $cond false
+  << $get_v (builtin.echo << $x false)

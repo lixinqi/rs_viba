@@ -1,0 +1,8 @@
+__decl__ =
+    Any
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import cycle_a as a
+__impl__ = a << (args.env.sub_env << args.env << "a")

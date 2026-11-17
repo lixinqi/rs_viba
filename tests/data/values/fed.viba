@@ -1,0 +1,17 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+feed_a_list =
+	int
+	<- $env Env
+	<- $f (int <- $env Env <- $x int)
+	<- { hand f a list }
+inc =
+	int
+	<- $env Env
+	<- $x int
+	<- { add one }
+__impl__ = feed_a_list << $env args.env << $f inc

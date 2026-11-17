@@ -1,0 +1,16 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+ask_twice =
+    int
+  <- $env Env
+  <- $get_x (int <- $env Env)
+  <- { add x to itself, asking for x twice }
+
+poison_raises_when_asked =
+    int <- $env Env <- { a step whose implementation raises }
+
+__impl__ = ask_twice << $env args.env << $get_x (poison_raises_when_asked << $env args.env)

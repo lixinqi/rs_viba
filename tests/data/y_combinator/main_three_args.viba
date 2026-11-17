@@ -1,0 +1,14 @@
+# main_three_args.viba —— 要跑的是 Y Three 3 4 5，该得 12
+#
+# 别名同样不叫 `F`：`Y << Three` 收下的是那个模块本身，与它叫什么名字无关。
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import add3_module as Three
+import Y
+
+# 这一层的实参接着 `<<` 给出（三个），`Y` 把它们收成一份积，`apply` 按成员个数选 apply_impl 那一支。
+__impl__ = Y << Three << ($sub_env << args.env << "Y") << $n 3 << $m 4 << $k 5

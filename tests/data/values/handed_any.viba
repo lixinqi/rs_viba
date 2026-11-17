@@ -1,0 +1,17 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+leaf =
+	int
+	<- $env Env
+	<- { answer seven }
+
+echo =
+	int
+	<- $env Env
+	<- $x Any
+	<- { hand the argument back }
+__impl__ = echo << $env args.env << $x leaf

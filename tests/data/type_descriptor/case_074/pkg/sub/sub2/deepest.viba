@@ -1,0 +1,19 @@
+import lv1.lv2.lv3.leaf
+
+Node0 = int * str * bool
+
+Report1 =
+  Object
+  * $count int
+  * $label str
+
+Bundle2 =
+  Object
+  * $items list[int]
+  * $seen set[str]
+  * $table dict[str, int]
+  * $maybe (int | nil)
+
+Rule3 =
+  Object
+  * $peer lv1.lv2.lv3.leaf.Bundle1

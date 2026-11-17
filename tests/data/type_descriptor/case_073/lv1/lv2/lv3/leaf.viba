@@ -1,0 +1,10 @@
+import util
+
+Bundle0 =
+  Object
+  * $peer util.Bundle0
+
+Config1 =
+  Oneof
+  | $left int
+  | $right str

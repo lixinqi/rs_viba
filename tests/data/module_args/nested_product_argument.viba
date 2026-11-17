@@ -1,0 +1,8 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import x_of_the_point
+__impl__ = x_of_the_point << (args.env.tmp_env << args.env) << ($x 2 * $y 5)

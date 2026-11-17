@@ -1,0 +1,16 @@
+__decl__ =
+    int
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+ignore_x =
+    int
+  <- $env Env
+  <- $get_x (int <- $env Env)
+  <- { answer seven without looking at x }
+
+poison_not_implemented =
+    int <- $env Env <- { nothing implements this }
+
+__impl__ = ignore_x << $env args.env << $get_x (poison_not_implemented << $env args.env)

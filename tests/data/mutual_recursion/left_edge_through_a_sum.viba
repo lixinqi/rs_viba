@@ -1,0 +1,7 @@
+__decl__ = Any <- $env Env
+
+import branch
+import right_edge_through_a_sum as right
+
+x = right.y | right.z
+__impl__ = x

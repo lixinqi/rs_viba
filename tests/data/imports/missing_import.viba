@@ -1,0 +1,8 @@
+__decl__ =
+    Any
+  <- $env Env
+
+args = __get_args__ << __decl__
+
+import nope as n
+__impl__ = n << args.env
